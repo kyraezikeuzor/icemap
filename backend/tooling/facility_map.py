@@ -4,7 +4,7 @@ from mpl_toolkits.basemap import Basemap
 
 def plot_facilities_on_map():
     # Load the data
-    input_file = "data/ice_facilities_with_coordinates.csv"
+    input_file = "data/all_facilities_with_coordinates.csv"
     try:
         df = pd.read_csv(input_file)
     except FileNotFoundError:

@@ -5,13 +5,19 @@ from typing import Tuple, Optional
 import os
 from dotenv import load_dotenv
 
-def geocode_facility(facility_name: str, city: str, state: str, gmaps_client) -> Tuple[Optional[float], Optional[float]]:
+def geocode_facility(facility_name: str, street: str, city: str, state: str, zipcode: str, gmaps_client) -> Tuple[Optional[float], Optional[float]]:
     """
-    Geocode a facility using Google Places API.
+    Geocode a facility using Google Places API with full address.
     Returns (latitude, longitude) or (None, None) if geocoding fails.
     """
-    # Construct the search query
-    query = f"{facility_name}, {city}, {state}, USA"
+    # Construct the search query using the full address
+    if street and zipcode:
+        query = f"{street}, {city}, {state} {zipcode}, USA"
+    elif street:
+        query = f"{street}, {city}, {state}, USA"
+    else:
+        # Fallback to facility name if no street address
+        query = f"{facility_name}, {city}, {state}, USA"
     
     try:
         # Add delay to respect rate limits
@@ -50,8 +56,8 @@ def main():
     gmaps = googlemaps.Client(key=api_key)
     
     # Read the CSV file
-    input_file = "data/ice_facilities.csv"
-    output_file = "data/ice_facilities_with_coordinates.csv"
+    input_file = "data/all_facilities.csv"
+    output_file = "data/all_facilities_with_coordinates.csv"
     
     try:
         df = pd.read_csv(input_file)
@@ -66,12 +72,14 @@ def main():
     # Process each facility
     total = len(df)
     for idx, row in df.iterrows():
-        print(f"Processing {idx + 1}/{total}: {row['Facility Name']}")
+        print(f"Processing {idx + 1}/{total}: {row['name']}")
         
         lat, lon = geocode_facility(
-            row['Facility Name'],
-            row['City'],
-            row['State'],
+            row['name'],
+            row['street'],
+            row['city'],
+            row['state'],
+            row['zipcode'],
             gmaps
         )
         
