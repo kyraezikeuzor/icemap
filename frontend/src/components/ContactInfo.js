@@ -16,7 +16,7 @@ export default function ContactInfo() {
     };
 
     return (
-        <div className="buy-me-coffee" style={{ bottom: 80, right: 24, left: 'auto', top: 'auto' }}>
+        <div className="buy-me-coffee" style={{ bottom: 80, right: 20 }}>
             <button
                 className="coffee-button"
                 style={{ minWidth: 200 }}
