@@ -1,14 +1,14 @@
 import React from 'react';
 import './BuyMeACoffee.css';
 
-function BuyMeACoffee({ isMobile, newsPanelCollapsed }) {
+function BuyMeACoffee({ isMobile }) {
     const handleClick = () => {
         // Replace this URL with your actual Buy Me a Coffee link
         window.open('https://www.buymeacoffee.com/icemap', '_blank');
     };
 
     return (
-        <div className={`buy-me-coffee ${isMobile ? 'mobile' : ''} ${!isMobile && newsPanelCollapsed ? 'panel-collapsed' : ''}`}>
+        <div className={`buy-me-coffee ${isMobile ? 'mobile' : ''}`}>
             <button
                 className="coffee-button"
                 onClick={handleClick}

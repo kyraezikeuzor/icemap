@@ -7,25 +7,12 @@
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* When unified panel is collapsed on non-mobile, move button to the left */
-.buy-me-coffee.panel-collapsed {
-    left: 60px;
-    /* Position to the right of the collapsed unified panel (40px sliver + 20px margin) */
-}
-
 .buy-me-coffee.mobile {
     top: 10px;
     left: auto;
     right: 10px;
     transform: none;
     /* Position in top right corner on mobile */
-}
-
-/* Ensure mobile positioning is not affected by panel-collapsed class */
-.buy-me-coffee.mobile.panel-collapsed {
-    right: 10px;
-    left: auto;
-    transform: none;
 }
 
 .coffee-button {
@@ -73,20 +60,19 @@
 }
 
 /* Mobile styling */
-.buy-me-coffee.mobile .coffee-button {
+.coffee-button.mobile {
     padding: 8px 12px;
     font-size: 12px;
     min-width: 100px;
     gap: 6px;
 }
 
-.buy-me-coffee.mobile .coffee-icon {
-    font-size: 14px;
+.coffee-text.mobile {
+    font-size: 12px;
 }
 
-.buy-me-coffee.mobile .coffee-text {
-    /* Show text on mobile */
-    display: inline;
+.coffee-icon.mobile {
+    font-size: 14px;
 }
 
 /* Coffee steam animation */
@@ -95,13 +81,32 @@
     0%,
     100% {
         transform: translateY(0) rotate(0deg);
-        opacity: 1;
+        opacity: 0.7;
     }
 
     50% {
         transform: translateY(-2px) rotate(5deg);
-        opacity: 0.8;
+        opacity: 1;
     }
+}
+
+/* Mobile coffee steam animation */
+@keyframes coffeeSteamMobile {
+
+    0%,
+    100% {
+        transform: translateY(0) rotate(0deg);
+        opacity: 0.7;
+    }
+
+    50% {
+        transform: translateY(-1px) rotate(3deg);
+        opacity: 1;
+    }
+}
+
+.coffee-icon.mobile {
+    animation: coffeeSteamMobile 2s ease-in-out infinite;
 }
 
 /* Responsive adjustments */

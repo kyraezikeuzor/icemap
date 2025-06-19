@@ -34,8 +34,7 @@ function parseCSVLine(line) {
     return result;
 }
 
-function UnifiedPanel({ cursorPosition, arrestData, onMapClick, isMobile, onCollapseChange }) {
-    const [isCollapsed, setIsCollapsed] = useState(false);
+function UnifiedPanel({ cursorPosition, arrestData, onMapClick, isMobile }) {
     const [activeTab, setActiveTab] = useState('incidents'); // 'incidents' or 'news'
 
     // Incidents state
@@ -56,6 +55,8 @@ function UnifiedPanel({ cursorPosition, arrestData, onMapClick, isMobile, onColl
 
     const incidentsListRef = useRef(null);
     const articlesListRef = useRef(null);
+    const incidentsContentRef = useRef(null);
+    const newsContentRef = useRef(null);
 
     // Clock effect for news
     useEffect(() => {
@@ -65,13 +66,6 @@ function UnifiedPanel({ cursorPosition, arrestData, onMapClick, isMobile, onColl
 
         return () => clearInterval(timer);
     }, []);
-
-    // Notify parent of collapse state changes
-    useEffect(() => {
-        if (onCollapseChange) {
-            onCollapseChange(isCollapsed);
-        }
-    }, [isCollapsed, onCollapseChange]);
 
     // Function to calculate distance between two points
     const calculateDistance = (lat1, lng1, lat2, lng2) => {
@@ -120,17 +114,21 @@ function UnifiedPanel({ cursorPosition, arrestData, onMapClick, isMobile, onColl
             }))
             .filter(point => !isNaN(point.lat) && !isNaN(point.lng));
 
-        // Use zoom-aware search radius that's generous but not overwhelming
-        // Base radius is large for coverage, but scales with zoom for precision
+        // Use zoom-aware search radius that decreases significantly as user zooms in
+        // This provides more precise results at higher zoom levels
         let searchRadius;
-        if (zoom >= 10) {
-            searchRadius = 0.5; // More precise at high zoom
+        if (zoom >= 12) {
+            searchRadius = 0.05; // Very precise at highest zoom
+        } else if (zoom >= 10) {
+            searchRadius = 0.1; // Precise at high zoom
         } else if (zoom >= 8) {
-            searchRadius = 1.0; // Medium precision
+            searchRadius = 0.25; // Medium precision
         } else if (zoom >= 6) {
-            searchRadius = 1.5; // Less precise at medium zoom
+            searchRadius = 0.5; // Less precise at medium zoom
+        } else if (zoom >= 4) {
+            searchRadius = 1.0; // Generous at low-medium zoom
         } else {
-            searchRadius = 2.5; // Very generous at low zoom
+            searchRadius = 2.0; // Very generous at low zoom
         }
 
         const nearby = points.filter(point => {
@@ -163,9 +161,16 @@ function UnifiedPanel({ cursorPosition, arrestData, onMapClick, isMobile, onColl
         if (onMapClick > lastClickCount) {
             if (nearbyIncidents.length > 0) {
                 if (!isPersistent) {
-                    // First click - pause the current incidents
+                    // First click - pause the current incidents and switch to incidents tab
                     setPersistentIncidents([...nearbyIncidents]);
                     setIsPersistent(true);
+                    setActiveTab('incidents');
+                    // Reset scroll position when switching via map click
+                    setTimeout(() => {
+                        if (incidentsContentRef.current) {
+                            incidentsContentRef.current.scrollTop = 0;
+                        }
+                    }, 0);
                 } else {
                     // Second click - unpause and clear
                     setPersistentIncidents([]);
@@ -303,9 +308,29 @@ function UnifiedPanel({ cursorPosition, arrestData, onMapClick, isMobile, onColl
         }
     };
 
-    const toggleCollapse = () => {
-        setIsCollapsed(!isCollapsed);
+    const handleTabSwitch = (newTab) => {
+        if (newTab === 'news' && isPersistent) {
+            // When switching to news tab, automatically unpause
+            setPersistentIncidents([]);
+            setIsPersistent(false);
+        }
+
+        setActiveTab(newTab);
     };
+
+    // Effect to reset scroll position when tab changes
+    useEffect(() => {
+        // Use setTimeout to ensure DOM has been updated
+        const timer = setTimeout(() => {
+            if (activeTab === 'incidents' && incidentsContentRef.current) {
+                incidentsContentRef.current.scrollTop = 0;
+            } else if (activeTab === 'news' && newsContentRef.current) {
+                newsContentRef.current.scrollTop = 0;
+            }
+        }, 0);
+
+        return () => clearTimeout(timer);
+    }, [activeTab]);
 
     const formatCoordinates = (lat, lng) => {
         if (lat === null || lng === null || lat === undefined || lng === undefined || isNaN(lat) || isNaN(lng)) {
@@ -340,10 +365,7 @@ function UnifiedPanel({ cursorPosition, arrestData, onMapClick, isMobile, onColl
     };
 
     return (
-        <div className={`unified-panel ${isCollapsed ? 'collapsed' : ''} ${isMobile ? 'mobile' : ''}`}>
-            <div className="unified-collapse-handle" onClick={toggleCollapse}>
-                <span className="collapse-icon">{isCollapsed ? '▶' : '◀'}</span>
-            </div>
+        <div className={`unified-panel ${isMobile ? 'mobile' : ''}`}>
             <div className="unified-panel-header">
 
                 {!isMobile && (
@@ -361,13 +383,13 @@ function UnifiedPanel({ cursorPosition, arrestData, onMapClick, isMobile, onColl
                     <div className="tab-toggle">
                         <button
                             className={`tab-button ${activeTab === 'incidents' ? 'active' : ''}`}
-                            onClick={() => setActiveTab('incidents')}
+                            onClick={() => handleTabSwitch('incidents')}
                         >
                             Incidents
                         </button>
                         <button
                             className={`tab-button ${activeTab === 'news' ? 'active' : ''}`}
-                            onClick={() => setActiveTab('news')}
+                            onClick={() => handleTabSwitch('news')}
                         >
                             {isMobile ? 'Feed' : 'Live News Feed'}
                         </button>
@@ -375,86 +397,84 @@ function UnifiedPanel({ cursorPosition, arrestData, onMapClick, isMobile, onColl
                 </div>
             </div>
 
-            {!isCollapsed && (
-                <div className="unified-panel-content">
-                    {activeTab === 'incidents' ? (
-                        <div className="incidents-content" onScroll={handleIncidentsScroll}>
-                            {currentIncidents.length === 0 ? (
-                                <div className="incidents-placeholder">
-                                    <h4>No Nearby Incidents</h4>
-                                    <p className="placeholder-text">
-                                        {isMobile ? 'Tap to see nearby incidents' : 'Move your cursor over the map to see nearby incidents.'}
-                                    </p>
+            <div className="unified-panel-content">
+                {activeTab === 'incidents' ? (
+                    <div className="incidents-content" ref={incidentsContentRef} onScroll={handleIncidentsScroll}>
+                        {currentIncidents.length === 0 ? (
+                            <div className="incidents-placeholder">
+                                <h4>No Nearby Incidents</h4>
+                                <p className="placeholder-text">
+                                    {isMobile ? 'Tap to see nearby incidents' : 'Move your cursor over the map to see nearby incidents.'}
+                                </p>
+                            </div>
+                        ) : (
+                            <div className="incidents-list" ref={incidentsListRef}>
+                                <div className="incidents-header">
+                                    <h4>
+                                        {isPersistent ? 'Incidents ' : 'Incidents in Range '}
+                                        ({currentIncidents.length})
+                                    </h4>
                                 </div>
-                            ) : (
-                                <div className="incidents-list" ref={incidentsListRef}>
-                                    <div className="incidents-header">
-                                        <h4>
-                                            {isPersistent ? 'Incidents ' : 'Incidents in Range '}
-                                            ({currentIncidents.length})
-                                        </h4>
+                                {displayedIncidents.map((incident, index) => (
+                                    <div key={index} className="incident-item">
+                                        <div className="incident-header">
+                                            {formatDate(incident.date) && (
+                                                <span className="incident-date">{formatDate(incident.date)}</span>
+                                            )}
+                                        </div>
+                                        <a
+                                            href={incident.url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="incident-title"
+                                        >
+                                            {incident.title || 'No title available'}
+                                        </a>
                                     </div>
-                                    {displayedIncidents.map((incident, index) => (
-                                        <div key={index} className="incident-item">
-                                            <div className="incident-header">
-                                                {formatDate(incident.date) && (
-                                                    <span className="incident-date">{formatDate(incident.date)}</span>
-                                                )}
-                                            </div>
-                                            <a
-                                                href={incident.url}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="incident-title"
-                                            >
-                                                {incident.title || 'No title available'}
-                                            </a>
+                                ))}
+                                {loadingMoreIncidents && (
+                                    <div className="loading-more">Loading more incidents...</div>
+                                )}
+                                {displayedIncidentCount >= currentIncidents.length && currentIncidents.length > 0 && (
+                                    <div className="no-more-incidents">No more incidents to load</div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                ) : (
+                    <div className="news-content" ref={newsContentRef} onScroll={handleArticlesScroll}>
+                        {loadingNews ? (
+                            <div className="loading">Loading news...</div>
+                        ) : (
+                            <div className="articles-list" ref={articlesListRef}>
+                                {articles.map((article, index) => (
+                                    <div key={index} className="article-item">
+                                        <div className="article-header">
+                                            {formatDate(article.date) && (
+                                                <span className="article-date">{formatDate(article.date)}</span>
+                                            )}
                                         </div>
-                                    ))}
-                                    {loadingMoreIncidents && (
-                                        <div className="loading-more">Loading more incidents...</div>
-                                    )}
-                                    {displayedIncidentCount >= currentIncidents.length && currentIncidents.length > 0 && (
-                                        <div className="no-more-incidents">No more incidents to load</div>
-                                    )}
-                                </div>
-                            )}
-                        </div>
-                    ) : (
-                        <div className="news-content" onScroll={handleArticlesScroll}>
-                            {loadingNews ? (
-                                <div className="loading">Loading news...</div>
-                            ) : (
-                                <div className="articles-list" ref={articlesListRef}>
-                                    {articles.map((article, index) => (
-                                        <div key={index} className="article-item">
-                                            <div className="article-header">
-                                                {formatDate(article.date) && (
-                                                    <span className="article-date">{formatDate(article.date)}</span>
-                                                )}
-                                            </div>
-                                            <a
-                                                href={article.url}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="article-title"
-                                            >
-                                                {article.title}
-                                            </a>
-                                        </div>
-                                    ))}
-                                    {loadingMoreArticles && (
-                                        <div className="loading-more">Loading more articles...</div>
-                                    )}
-                                    {displayedArticleCount >= allArticles.length && allArticles.length > 0 && (
-                                        <div className="no-more-articles">No more articles to load</div>
-                                    )}
-                                </div>
-                            )}
-                        </div>
-                    )}
-                </div>
-            )}
+                                        <a
+                                            href={article.url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="article-title"
+                                        >
+                                            {article.title}
+                                        </a>
+                                    </div>
+                                ))}
+                                {loadingMoreArticles && (
+                                    <div className="loading-more">Loading more articles...</div>
+                                )}
+                                {displayedArticleCount >= allArticles.length && allArticles.length > 0 && (
+                                    <div className="no-more-articles">No more articles to load</div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
         </div>
     );
 }
