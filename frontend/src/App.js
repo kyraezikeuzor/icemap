@@ -5,6 +5,12 @@ import NewsPanel from './NewsPanel';
 import IncidentsPanel from './IncidentsPanel';
 import './App.css';
 
+// Helper function to detect mobile devices
+function isMobileDevice() {
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+        window.innerWidth <= 768;
+}
+
 // Helper function to properly parse CSV lines with quoted fields
 function parseCSVLine(line) {
     const result = [];
@@ -44,6 +50,24 @@ function App() {
     const [showModal, setShowModal] = useState(true);
     const [cursorPosition, setCursorPosition] = useState(null);
     const [mapClickCount, setMapClickCount] = useState(0);
+    const [isMobile, setIsMobile] = useState(false);
+
+    // Detect mobile device on mount and window resize
+    useEffect(() => {
+        const checkMobile = () => {
+            setIsMobile(isMobileDevice());
+        };
+
+        // Check on mount
+        checkMobile();
+
+        // Listen for window resize
+        window.addEventListener('resize', checkMobile);
+
+        return () => {
+            window.removeEventListener('resize', checkMobile);
+        };
+    }, []);
 
     useEffect(() => {
         const loadArrestData = async () => {
@@ -109,13 +133,14 @@ function App() {
                 cursorPosition={cursorPosition}
                 arrestData={arrestData}
                 onMapClick={mapClickCount}
+                isMobile={isMobile}
             />
             <MapComponent
                 arrestData={arrestData}
                 onCursorMove={handleCursorMove}
                 onMapClick={handleMapClick}
             />
-            <NewsPanel />
+            <NewsPanel isMobile={isMobile} />
         </div>
     );
 }

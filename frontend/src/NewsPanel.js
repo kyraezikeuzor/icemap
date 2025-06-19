@@ -34,7 +34,7 @@ function parseCSVLine(line) {
     return result;
 }
 
-function NewsPanel() {
+function NewsPanel({ isMobile }) {
     const [articles, setArticles] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isCollapsed, setIsCollapsed] = useState(false);
@@ -183,13 +183,15 @@ function NewsPanel() {
 
     if (loading) {
         return (
-            <div className={`news-panel ${isCollapsed ? 'collapsed' : ''}`}>
+            <div className={`news-panel ${isCollapsed ? 'collapsed' : ''} ${isMobile ? 'mobile' : ''}`}>
                 <div className="news-collapse-handle" onClick={toggleCollapse}>
                     <span className="collapse-icon">{isCollapsed ? '▶' : '◀'}</span>
                 </div>
                 <div className="news-panel-header">
-                    <h3>Live News Feed</h3>
-                    <span className="live-clock">{formatMilitaryTime(currentTime)}</span>
+                    <div className={`header-content ${isMobile ? 'mobile' : ''}`}>
+                        <h3>Live News Feed</h3>
+                        <span className="live-clock">{formatMilitaryTime(currentTime)}</span>
+                    </div>
                 </div>
                 {!isCollapsed && (
                     <div className="news-panel-content">
@@ -201,7 +203,7 @@ function NewsPanel() {
     }
 
     return (
-        <div className={`news-panel ${isCollapsed ? 'collapsed' : ''}`}>
+        <div className={`news-panel ${isCollapsed ? 'collapsed' : ''} ${isMobile ? 'mobile' : ''}`}>
             <div className="news-collapse-handle" onClick={toggleCollapse}>
                 <span className="collapse-icon">{isCollapsed ? '◀' : '▶'}</span>
             </div>

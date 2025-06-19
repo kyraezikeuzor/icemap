@@ -21,9 +21,20 @@
     /* stays above main page */
 }
 
+/* Mobile-specific styling */
+.news-panel.mobile {
+    width: 120px;
+    max-width: 30vw;
+}
+
 /* slide almost completely off-screen, leaving a 40 px sliver */
 .news-panel.collapsed {
     transform: translateX(calc(100% - 40px));
+}
+
+/* Mobile collapsed state - leave a smaller sliver */
+.news-panel.mobile.collapsed {
+    transform: translateX(calc(100% - 25px));
 }
 
 /* collapse handle - vertical bar on the left side of news panel */
@@ -77,6 +88,11 @@
     background: #1a1a1a;
 }
 
+/* Mobile content padding */
+.news-panel.mobile .news-panel-content {
+    padding: 0.25rem 0.5rem 0.5rem;
+}
+
 .news-panel.collapsed .news-panel-content {
     opacity: 0;
     pointer-events: none;
@@ -90,6 +106,12 @@
     border: 1px solid #333;
 }
 
+/* Mobile article item */
+.news-panel.mobile .article-item {
+    margin-bottom: 0.5rem;
+    padding: 0.5rem;
+}
+
 .article-header {
     display: flex;
     justify-content: space-between;
@@ -98,12 +120,24 @@
     margin-bottom: 0.25rem;
 }
 
+/* Mobile article header */
+.news-panel.mobile .article-header {
+    font-size: 0.65rem;
+    margin-bottom: 0.2rem;
+}
+
 .article-title {
     font-size: 0.9rem;
     line-height: 1.25;
     color: #ccc;
     text-decoration: none;
     transition: color 0.2s ease;
+}
+
+/* Mobile article title */
+.news-panel.mobile .article-title {
+    font-size: 0.75rem;
+    line-height: 1.2;
 }
 
 .article-title:hover {
@@ -122,11 +156,25 @@
     user-select: none;
 }
 
+/* Mobile header */
+.news-panel.mobile .news-panel-header {
+    padding: 0.5rem 0.75rem;
+    min-height: 40px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+}
+
 .news-panel-header h3 {
     margin: 0;
     font-size: 1rem;
     color: #ccc;
     font-weight: 500;
+}
+
+/* Mobile header title */
+.news-panel.mobile .news-panel-header h3 {
+    font-size: 0.8rem;
 }
 
 .live-clock {
@@ -141,6 +189,13 @@
     min-width: 85px;
     text-align: center;
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+/* Mobile live clock */
+.news-panel.mobile .live-clock {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.4rem;
+    min-width: 60px;
 }
 
 /* loading state */
@@ -271,4 +326,10 @@
     background: #1a1a1a;
     border-radius: 3px;
     min-height: 120px;
+}
+
+/* Mobile collapse handle */
+.news-panel.mobile .news-collapse-handle {
+    width: 20px;
+    height: 60px;
 }

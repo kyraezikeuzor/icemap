@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './IncidentsPanel.css';
 
-function IncidentsPanel({ cursorPosition, arrestData, onMapClick }) {
+function IncidentsPanel({ cursorPosition, arrestData, onMapClick, isMobile }) {
     const [isCollapsed, setIsCollapsed] = useState(false);
     const [nearbyIncidents, setNearbyIncidents] = useState([]);
     const [displayedCount, setDisplayedCount] = useState(20);
@@ -189,7 +189,7 @@ function IncidentsPanel({ cursorPosition, arrestData, onMapClick }) {
     const displayedIncidents = currentIncidents.slice(0, displayedCount);
 
     return (
-        <div className={`incidents-panel ${isCollapsed ? 'collapsed' : ''}`}>
+        <div className={`incidents-panel ${isCollapsed ? 'collapsed' : ''} ${isMobile ? 'mobile' : ''}`}>
             <div className="incidents-collapse-handle" onClick={toggleCollapse}>
                 <span className="collapse-icon">{isCollapsed ? '▶' : '◀'}</span>
             </div>
@@ -207,7 +207,7 @@ function IncidentsPanel({ cursorPosition, arrestData, onMapClick }) {
                         <div className="incidents-placeholder">
                             <h4>No Nearby Incidents</h4>
                             <p className="placeholder-text">
-                                Move your cursor over the map to see nearby incidents.
+                                {isMobile ? 'Tap to see nearby incidents' : 'Move your cursor over the map to see nearby incidents.'}
                             </p>
                         </div>
                     ) : (

@@ -21,9 +21,20 @@
     /* stays above main page */
 }
 
+/* Mobile-specific styling */
+.incidents-panel.mobile {
+    width: 120px;
+    max-width: 30vw;
+}
+
 /* slide almost completely off-screen, leaving a 40 px sliver */
 .incidents-panel.collapsed {
     transform: translateX(calc(-100% + 40px));
+}
+
+/* Mobile collapsed state - leave a smaller sliver */
+.incidents-panel.mobile.collapsed {
+    transform: translateX(calc(-100% + 25px));
 }
 
 /* collapse handle - vertical bar on the right side of incidents panel */
@@ -45,6 +56,12 @@
     box-shadow: -2px 0 8px rgba(0, 0, 0, 0.4);
     border: 1px solid #222;
     border-right: none;
+}
+
+/* Mobile collapse handle */
+.incidents-panel.mobile .incidents-collapse-handle {
+    width: 20px;
+    height: 60px;
 }
 
 .incidents-collapse-handle:hover {
@@ -77,6 +94,11 @@
     background: #1a1a1a;
 }
 
+/* Mobile content padding */
+.incidents-panel.mobile .incidents-panel-content {
+    padding: 0.25rem 0.5rem 0.5rem;
+}
+
 .incidents-panel.collapsed .incidents-panel-content {
     opacity: 0;
     pointer-events: none;
@@ -95,6 +117,12 @@
     /* Ensure consistent height */
 }
 
+/* Mobile header */
+.incidents-panel.mobile .incidents-panel-header {
+    padding: 0.5rem 0.75rem;
+    min-height: 40px;
+}
+
 .incidents-panel-header h3 {
     margin: 0;
     font-size: 1rem;
@@ -102,6 +130,11 @@
     font-weight: 500;
     flex: 1;
     /* Take up available space */
+}
+
+/* Mobile header title */
+.incidents-panel.mobile .incidents-panel-header h3 {
+    font-size: 0.8rem;
 }
 
 /* paused indicator */
@@ -158,11 +191,23 @@
     border: 1px solid #333;
 }
 
+/* Mobile cursor info */
+.incidents-panel.mobile .cursor-info {
+    margin-bottom: 1rem;
+    padding: 0.75rem;
+}
+
 .cursor-info h4 {
     margin: 0 0 0.5rem 0;
     font-size: 0.9rem;
     color: #ccc;
     font-weight: 500;
+}
+
+/* Mobile cursor info title */
+.incidents-panel.mobile .cursor-info h4 {
+    font-size: 0.75rem;
+    margin-bottom: 0.4rem;
 }
 
 .coordinates-display {
@@ -177,12 +222,23 @@
     font-weight: 600;
 }
 
+/* Mobile coordinates display */
+.incidents-panel.mobile .coordinates-display {
+    font-size: 0.7rem;
+    padding: 0.4rem;
+}
+
 /* incidents placeholder section */
 .incidents-placeholder {
     padding: 1rem;
     background: #222;
     border-radius: 4px;
     border: 1px solid #333;
+}
+
+/* Mobile incidents placeholder */
+.incidents-panel.mobile .incidents-placeholder {
+    padding: 0.75rem;
 }
 
 .incidents-placeholder h4 {
@@ -192,12 +248,23 @@
     font-weight: 500;
 }
 
+/* Mobile incidents placeholder title */
+.incidents-panel.mobile .incidents-placeholder h4 {
+    font-size: 0.75rem;
+    margin-bottom: 0.4rem;
+}
+
 .placeholder-text {
     color: #999;
     font-size: 0.85rem;
     font-style: italic;
     margin: 0;
     text-align: center;
+}
+
+/* Mobile placeholder text */
+.incidents-panel.mobile .placeholder-text {
+    font-size: 0.7rem;
 }
 
 /* scrollbar styling for dark theme */
@@ -231,11 +298,22 @@
     border: 1px solid #333;
 }
 
+/* Mobile incidents header */
+.incidents-panel.mobile .incidents-header {
+    margin-bottom: 0.75rem;
+    padding: 0.5rem;
+}
+
 .incidents-header h4 {
     margin: 0;
     font-size: 0.9rem;
     color: #ccc;
     font-weight: 500;
+}
+
+/* Mobile incidents header title */
+.incidents-panel.mobile .incidents-header h4 {
+    font-size: 0.75rem;
 }
 
 .incident-item {
@@ -244,6 +322,12 @@
     background: #222;
     border-radius: 4px;
     border: 1px solid #333;
+}
+
+/* Mobile incident item */
+.incidents-panel.mobile .incident-item {
+    margin-bottom: 0.5rem;
+    padding: 0.5rem;
 }
 
 .incident-item:hover {
@@ -260,9 +344,20 @@
     margin-bottom: 0.25rem;
 }
 
+/* Mobile incident header */
+.incidents-panel.mobile .incident-header {
+    font-size: 0.65rem;
+    margin-bottom: 0.2rem;
+}
+
 .incident-date {
     font-size: 0.75rem;
     color: #999;
+}
+
+/* Mobile incident date */
+.incidents-panel.mobile .incident-date {
+    font-size: 0.65rem;
 }
 
 .incident-title {
@@ -272,6 +367,12 @@
     text-decoration: none;
     transition: color 0.2s ease;
     display: block;
+}
+
+/* Mobile incident title */
+.incidents-panel.mobile .incident-title {
+    font-size: 0.75rem;
+    line-height: 1.2;
 }
 
 .incident-title:hover {
