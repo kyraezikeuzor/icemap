@@ -1,0 +1,4 @@
+/* Ensure heat canvases stay on top */
+.leaflet-heatmap-layer {
+    z-index: 999 !important;
+}

@@ -4,6 +4,7 @@ import L from 'leaflet';
 import './Branding.css';
 import CountyCaseHeatMap from './components/CountyCaseHeatMap';
 import MapControls from './components/MapControls';
+import './components/HeatMapLayer.css';
 
 // Fix for default markers in react-leaflet
 delete L.Icon.Default.prototype._getIconUrl;
@@ -17,11 +18,41 @@ L.Icon.Default.mergeOptions({
 let HeatLayer;
 try {
     require('leaflet.heat');
-    HeatLayer = L.heatLayer;
+    // Ensure we have access to the original heatLayer implementation
+    const originalHeatLayer = L.heatLayer;
+    
+    // Create a wrapper that sets the correct pane
+    HeatLayer = function(data, options) {
+        // Create a heatmap layer with the specified options
+        const heatLayer = originalHeatLayer(data, options);
+        
+        // Override the onAdd method to ensure it's added to a specific pane
+        const originalOnAdd = heatLayer.onAdd;
+        heatLayer.onAdd = function(map) {
+            // Create a special pane for heat if it doesn't exist
+            if (!map.getPane('heatPane')) {
+                map.createPane('heatPane');
+                map.getPane('heatPane').style.zIndex = 650; // Much higher z-index to ensure it's on top
+            }
+            
+            // Save the original container and pane
+            const result = originalOnAdd.call(this, map);
+            
+            // Move the heat canvas to our special pane
+            if (this._heat && this._heat._container) {
+                map.getPane('heatPane').appendChild(this._heat._container);
+            }
+            
+            return result;
+        };
+        
+        return heatLayer;
+    };
 } catch (error) {
     console.warn('leaflet.heat not available, falling back to basic implementation');
     // Fallback implementation
     HeatLayer = function (data, options) {
+        // Create a layerGroup that will be added to the special pane
         const layer = L.layerGroup();
         data.forEach(point => {
             const circle = L.circle([point[0], point[1]], {
@@ -31,7 +62,8 @@ try {
                 weight: 1,
                 opacity: 0.8,
                 fillOpacity: Math.min(point[2] / 5, 0.9), // More sensitive to fewer arrests
-                interactive: false // Ensure circles don't block clicks
+                interactive: false, // Ensure circles don't block clicks
+                pane: 'heatPane' // Use the heat pane for better z-index control
             });
             layer.addLayer(circle);
         });
@@ -119,18 +151,12 @@ function HeatMapLayer({ arrestData, enabled = true }) {
             map.removeLayer(heatLayerRef.current);
         }
 
-        // Create a custom pane for the heat map layer with higher z-index
-        if (!map.getPane('heatPane')) {
-            map.createPane('heatPane');
-            map.getPane('heatPane').style.zIndex = 450; // Higher value to ensure it's above the county layer (default overlay pane is 400)
-        }
-
         // Create new heat layer with yellow-to-dark-maroon gradient
+        // The pane is now handled directly in the HeatLayer function
         heatLayerRef.current = HeatLayer(heatMapData, {
             radius: Math.max(25, 60 - currentZoom * 2), // Slightly larger radius
             blur: 20,
             maxZoom: 10,
-            pane: 'heatPane', // Use the custom heat pane
             gradient: {
                 0.0: '#FFFF00',   // Yellow for low intensity
                 0.2: '#FFD700',   // Gold
@@ -248,9 +274,9 @@ function MapComponent({ arrestData, onCursorMove, onMapClick }) {
                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                     url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
                 />
-                {/* Add the county case map layer (blue) underneath the heat map layer */}
-                <CountyCaseHeatMap enabled={showCountyLayer} />
-                <HeatMapLayer arrestData={arrestData} enabled={showHeatMapLayer} />
+                {/* Change the rendering order - first county layer, then heat map layer on top */}
+                {showCountyLayer && <CountyCaseHeatMap enabled={true} />}
+                {showHeatMapLayer && <HeatMapLayer arrestData={arrestData} enabled={true} />}
                 {(onCursorMove || onMapClick) && <CursorTracker onCursorMove={onCursorMove} onMapClick={onMapClick} />}
             </MapContainer>
         </div>

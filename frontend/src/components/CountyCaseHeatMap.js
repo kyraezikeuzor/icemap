@@ -26,13 +26,12 @@ const createLegend = (minCount, maxCount) => {
             const colorScale = d3Scale.scaleSequential()
                 .domain([0, breaks.length - 1])
                 .interpolator(t => {
-                    // Exact same color palette as the map
-                    if (t < 0.1) return '#ffffff';       // White for lowest values
-                    if (t < 0.3) return '#e1edf9';       // Very light blue
-                    if (t < 0.5) return '#b8d4f0';       // Light blue
-                    if (t < 0.7) return '#90bce8';       // Medium light blue
-                    if (t < 0.9) return '#67a3df';       // Medium blue
-                    return '#2c7ed1';                    // Dark blue for highest values
+                    // Create a lighter blue palette similar to the example image
+                    if (t < 0.2) return 'rgb(235, 245, 255)';      // Very light blue
+                    if (t < 0.4) return 'rgb(198, 219, 239)';      // Light blue
+                    if (t < 0.6) return 'rgb(158, 202, 225)';      // Medium light blue
+                    if (t < 0.8) return 'rgb(107, 174, 214)';      // Medium blue
+                    return 'rgb(66, 146, 198)';                    // Darker blue (not too dark)
                 });
                 
             div.innerHTML +=
@@ -149,17 +148,16 @@ function CountyCaseHeatMap({ enabled = true }) {
         const minCount = Math.min(...caseCounts) || 0;
         const maxCount = Math.max(...caseCounts) || 1;
 
-        // Create a custom color scale with the specified gradient from white to dark blue
+        // Create a custom color scale with lighter blues like in the example
         const colorScale = d3Scale.scaleSequential()
             .domain([0, maxCount])
             .interpolator(t => {
-                // Create the exact color palette as specified
-                if (t < 0.1) return '#ffffff';       // White for lowest values
-                if (t < 0.3) return '#e1edf9';       // Very light blue
-                if (t < 0.5) return '#b8d4f0';       // Light blue
-                if (t < 0.7) return '#90bce8';       // Medium light blue
-                if (t < 0.9) return '#67a3df';       // Medium blue
-                return '#2c7ed1';                    // Dark blue (#2c7ed1) for highest values
+                // Create a lighter blue palette similar to the example image
+                if (t < 0.2) return 'rgb(235, 245, 255)';      // Very light blue
+                if (t < 0.4) return 'rgb(198, 219, 239)';      // Light blue
+                if (t < 0.6) return 'rgb(158, 202, 225)';      // Medium light blue
+                if (t < 0.8) return 'rgb(107, 174, 214)';      // Medium blue
+                return 'rgb(66, 146, 198)';                    // Darker blue (not too dark)
             });
 
         // Style function for the GeoJSON
@@ -170,27 +168,25 @@ function CountyCaseHeatMap({ enabled = true }) {
             // Get the case count using the county FIPS code
             const caseCount = caseData[countyId] || 0;
             
-            // Use a more visually effective scale for the data range
-            let fillOpacity = 0;
+            // Get the color and opacity based on case count
+            let fillColor = '#ffffff'; // Default to white
+            let fillOpacity = 0.05;    // Default low opacity for counties with no data
             
             if (caseCount > 0) {
+                // Get color from our custom scale for counties with cases
+                fillColor = colorScale(caseCount);
+                
                 // Create a scale that shows distinctions better even with large ranges
-                // Use a power scale with exponent 0.3 for better visual distribution
                 const powerScale = d3Scale.scalePow()
                     .exponent(0.3)  // Lower exponent gives more visual distinction to lower values
                     .domain([1, Math.max(maxCount, 10)])
-                    .range([0.3, 0.95]);  // Higher min opacity to ensure all counties with data are visible
+                    .range([0.4, 0.95]);  // Slightly reduced opacity range for better visibility
                     
                 fillOpacity = powerScale(Math.max(1, caseCount));
-            } else {
-                fillOpacity = 0.05; // Very light fill for counties with no data
             }
             
-            // Get the fill color based on the case count
-            const fillColor = caseCount > 0 ? colorScale(caseCount) : '#0057ff';
-            
             return {
-                fillColor: fillColor,
+                fillColor: fillColor,       // Use the color we calculated above
                 weight: 0.5,                // Thinner borders like in the example
                 opacity: 0.5,               // Semi-transparent borders
                 color: '#a9c6e5',           // Lighter blue for borders like in example
