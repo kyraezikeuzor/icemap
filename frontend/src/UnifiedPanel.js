@@ -421,9 +421,6 @@ function UnifiedPanel({ cursorPosition, arrestData, onMapClick, isMobile }) {
                                             {formatDate(incident.date) && (
                                                 <span className="incident-date">{formatDate(incident.date)}</span>
                                             )}
-                                            {incident.category && (
-                                                <span className="incident-category-tag">{incident.category}</span>
-                                            )}
                                         </div>
                                         <a
                                             href={incident.url}

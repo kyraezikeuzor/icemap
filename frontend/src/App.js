@@ -3,6 +3,7 @@ import MapComponent from './MapComponent';
 import InfoModal from './InfoModal';
 import UnifiedPanel from './UnifiedPanel';
 import BuyMeACoffee from './BuyMeACoffee';
+import ContactInfo from './components/ContactInfo';
 import './App.css';
 
 // Helper function to detect mobile devices
@@ -70,9 +71,9 @@ function App() {
     }, []);
 
     useEffect(() => {
-        const loadIncidentData = async () => {
+        const loadArrestData = async () => {
             try {
-                const response = await fetch('/newsroom_incidents.csv');
+                const response = await fetch('/arrests_with_titles.csv');
                 const csvText = await response.text();
 
                 // Parse CSV with proper handling of quoted fields
@@ -82,29 +83,28 @@ function App() {
                 const data = lines.slice(1).map(line => {
                     if (!line.trim()) return null; // Skip empty lines
                     const values = parseCSVLine(line);
-                    const incident = {};
+                    const arrest = {};
                     headers.forEach((header, index) => {
-                        if (header.trim() === 'reported_count') return; // Ignore reported_count
-                        incident[header.trim()] = values[index] ? values[index].trim() : '';
+                        arrest[header.trim()] = values[index] ? values[index].trim() : '';
                     });
-                    return incident;
-                }).filter(incident =>
-                    incident &&
-                    incident.latitude &&
-                    incident.longitude &&
-                    !isNaN(parseFloat(incident.latitude)) &&
-                    !isNaN(parseFloat(incident.longitude))
+                    return arrest;
+                }).filter(arrest =>
+                    arrest &&
+                    arrest.latitude &&
+                    arrest.longitude &&
+                    !isNaN(parseFloat(arrest.latitude)) &&
+                    !isNaN(parseFloat(arrest.longitude))
                 );
 
                 setArrestData(data);
             } catch (error) {
-                console.error('Error loading incident data:', error);
+                console.error('Error loading arrest data:', error);
             } finally {
                 setLoading(false);
             }
         };
 
-        loadIncidentData();
+        loadArrestData();
     }, []);
 
     const closeModal = () => {
@@ -129,6 +129,7 @@ function App() {
 
     return (
         <div className="App">
+            <ContactInfo />
             <InfoModal isOpen={showModal} onClose={closeModal} />
             <BuyMeACoffee isMobile={isMobile} />
             <UnifiedPanel
