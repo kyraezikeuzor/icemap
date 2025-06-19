@@ -62,17 +62,25 @@ function CountyCaseHeatMap({ enabled = true }) {
                     // Add the last value
                     values.push(currentValue);
 
-                    // Extract the county ID and case count
+                    // Extract the county ID and case counts
                     const countyId = values[0]?.trim();
                     let caseCount = values[1]?.trim();
+                    let caseCount90Days = values[3]?.trim(); // cocount90 is the 4th column (index 3)
 
                     // Remove commas and convert to number
                     if (caseCount) {
                         caseCount = parseInt(caseCount.replace(/,/g, ''), 10);
                     }
+                    
+                    if (caseCount90Days) {
+                        caseCount90Days = parseInt(caseCount90Days.replace(/,/g, ''), 10);
+                    }
 
                     if (countyId && !isNaN(caseCount)) {
-                        parsedData[countyId] = caseCount;
+                        parsedData[countyId] = {
+                            totalCases: caseCount,
+                            cases90Days: caseCount90Days || 0
+                        };
                     }
                 });
 
@@ -103,7 +111,7 @@ function CountyCaseHeatMap({ enabled = true }) {
         }
 
         // Find min and max case counts for color scale
-        const caseCounts = Object.values(caseData).filter(count => count > 0);
+        const caseCounts = Object.values(caseData).map(data => data.totalCases).filter(count => count > 0);
         const minCount = Math.min(...caseCounts) || 0;
         const maxCount = Math.max(...caseCounts) || 1;
 
@@ -124,7 +132,8 @@ function CountyCaseHeatMap({ enabled = true }) {
         // Style function for the GeoJSON
         const style = (feature) => {
             const countyId = feature.id;
-            const caseCount = caseData[countyId] || 0;
+            const countyData = caseData[countyId] || { totalCases: 0, cases90Days: 0 };
+            const caseCount = countyData.totalCases;
             let fillColor = '#ffffff';
             let fillOpacity = 0.2;
             let borderColor = '#e34a33';
@@ -165,17 +174,24 @@ function CountyCaseHeatMap({ enabled = true }) {
                 // Extract county name from properties
                 const countyName = feature.properties.NAME;
                 const countyId = feature.id;
-                const caseCount = caseData[countyId] || 0;
+                const countyData = caseData[countyId] || { totalCases: 0, cases90Days: 0 };
+                const caseCount = countyData.totalCases;
+                const caseCount90Days = countyData.cases90Days;
 
-                // Format case count with commas
+                // Format case counts with commas
                 const formattedCount = caseCount.toLocaleString();
+                const formattedCount90Days = caseCount90Days.toLocaleString();
 
-                // Create tooltip with only county info and case count
+                // Create tooltip with county info, total open cases, and cases in past 90 days
                 layer.bindTooltip(`
                     <div style="font-weight:600; margin-bottom:4px;">${countyName}</div>
-                    <div style="display:flex; align-items:center;">
+                    <div style="display:flex; align-items:center; margin-bottom:3px;">
                         <span style="color:#3182bd; font-weight:bold; margin-right:5px;">${formattedCount}</span>
                         <span style="color:#800000;">open cases</span>
+                    </div>
+                    <div style="display:flex; align-items:center;">
+                        <span style="color:#3182bd; font-weight:bold; margin-right:5px;">${formattedCount90Days}</span>
+                        <span style="color:#800000;">cases opened in past 90 days</span>
                     </div>
                 `, {
                     sticky: true,
