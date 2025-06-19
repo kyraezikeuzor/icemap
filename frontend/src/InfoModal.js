@@ -18,7 +18,8 @@ function InfoModal({ isOpen, onClose }) {
                         with specific focus on its Enforcement and Removal Operations department (ERO).
                     </p>
                     <p>
-                        icemap aggregates both unstructured and structured data from a multitude of public online sources, then distills these data into useful sources and figures.
+                        icemap aggregates both unstructured and structured data from a multitude of public online sources, then distills these data into useful sources and figures. 
+                        Currently, this vizualization pulls statistics and articles from ICE newsroom reports, TRAC immigration data, as well as a myriad of local and national news sources. 
                     </p>
                     <p>
                         icemap does not aim to hinder operations nor spark fear, but instead provide a lens with which the American people can
