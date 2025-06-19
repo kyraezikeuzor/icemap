@@ -1,15 +1,15 @@
-# icemap
+* icemap
 
 we strongly believe that the American people should have full insight into the actions of its democratically-elected government.
 
 icemap.dev aims to educate the American people on the activities and injustices of America's Immigration Customs Agency (ICE),
-with specific focus on its Enforcement and Removal Operations department.
+with specific focus on its Enforcement and Removal Operations department (ERO).
 
 icemap aggregates both unstructured and structured data from a multitude of sources, consolidating this signal into useful
 information for the American people.
 
 icemap does not aim to hinder operations nor spark fear, but instead provide a lens with which the American people can
-observe their government.
+observe.
 
 our realization is that transparency, not abstract political messaging, will best inform the American public.
 
@@ -61,9 +61,41 @@ assorted details:
 
 ### backend:
 
+IMPORTANT (remember this for tomorrow Jack): start using MediaCloud's API for obtaining present & past local news articles on ICE raids around the coutnry.
+
 - robust pipeline for automatic data transmission (site updates -> html retrieval, parsing -> data processing -> shown on frontend)
 - though data is currently stored in local csv files, the python scripts should run on a schedule (AWS Lambda, EventBridge), make api calls to update some database, and then the frontend should be connected to this database with some sort of api connection to update the data it uses
 - need to learn what this pipeline looks like in reality. should study the writings of hft people
+
+**Proposed AWS-based Architecture:**
+
+```mermaid
+flowchart TD
+    subgraph "Data Collection"
+        A["AWS Lambda\n(Data Scraper)"]
+        B["Amazon S3\n(Raw Data Bucket)"]
+    end
+    subgraph "                                Data Processing"
+        C["AWS Lambda\n(Data Processor)"]
+        D["Amazon DynamoDB\n(Processed Data)"]
+    end
+    subgraph "API Layer"
+        E["API Gateway"]
+        F["AWS Lambda\n(API Handler)"]
+    end
+    subgraph "Frontend"
+        G["Vercel"]
+        H["S3 Static Website"]
+    end
+  
+    A -->|"Raw CSV"| B
+    B -->|"Trigger"| C
+    C -->|"Structured Data"| D
+    E -->|"Request"| F
+    F -->|"Query"| D
+    G -->|"Serve"| H
+    H -->|"API Calls"| E
+```
 
 ## pipeline:
 
