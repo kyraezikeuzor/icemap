@@ -3,7 +3,6 @@ import { MapContainer, TileLayer, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import './Branding.css';
 import CountyCaseHeatMap from './components/CountyCaseHeatMap';
-import MapControls from './components/MapControls';
 import './components/HeatMapLayer.css';
 
 // Fix for default markers in react-leaflet
@@ -20,32 +19,32 @@ try {
     require('leaflet.heat');
     // Ensure we have access to the original heatLayer implementation
     const originalHeatLayer = L.heatLayer;
-    
+
     // Create a wrapper that sets the correct pane
-    HeatLayer = function(data, options) {
+    HeatLayer = function (data, options) {
         // Create a heatmap layer with the specified options
         const heatLayer = originalHeatLayer(data, options);
-        
+
         // Override the onAdd method to ensure it's added to a specific pane
         const originalOnAdd = heatLayer.onAdd;
-        heatLayer.onAdd = function(map) {
+        heatLayer.onAdd = function (map) {
             // Create a special pane for heat if it doesn't exist
             if (!map.getPane('heatPane')) {
                 map.createPane('heatPane');
                 map.getPane('heatPane').style.zIndex = 650; // Much higher z-index to ensure it's on top
             }
-            
+
             // Save the original container and pane
             const result = originalOnAdd.call(this, map);
-            
+
             // Move the heat canvas to our special pane
             if (this._heat && this._heat._container) {
                 map.getPane('heatPane').appendChild(this._heat._container);
             }
-            
+
             return result;
         };
-        
+
         return heatLayer;
     };
 } catch (error) {
@@ -234,19 +233,6 @@ function CursorTracker({ onCursorMove, onMapClick }) {
 }
 
 function MapComponent({ arrestData, onCursorMove, onMapClick }) {
-    const [showCountyLayer, setShowCountyLayer] = useState(true);
-    const [showHeatMapLayer, setShowHeatMapLayer] = useState(true);
-    
-    // Handle toggle county layer
-    const handleToggleCountyLayer = (isVisible) => {
-        setShowCountyLayer(isVisible);
-    };
-    
-    // Handle toggle heat map layer
-    const handleToggleHeatMapLayer = (isVisible) => {
-        setShowHeatMapLayer(isVisible);
-    };
-    
     // Calculate center of the map based on data
     const center = arrestData.length > 0
         ? [
@@ -260,10 +246,6 @@ function MapComponent({ arrestData, onCursorMove, onMapClick }) {
             <div className="branding-overlay">
                 icemap.dev
             </div>
-            <MapControls 
-                onToggleCountyLayer={handleToggleCountyLayer} 
-                onToggleHeatMapLayer={handleToggleHeatMapLayer} 
-            />
             <MapContainer
                 center={center}
                 zoom={4}
@@ -275,8 +257,8 @@ function MapComponent({ arrestData, onCursorMove, onMapClick }) {
                     url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
                 />
                 {/* Change the rendering order - first county layer, then heat map layer on top */}
-                {showCountyLayer && <CountyCaseHeatMap enabled={true} />}
-                {showHeatMapLayer && <HeatMapLayer arrestData={arrestData} enabled={true} />}
+                <CountyCaseHeatMap enabled={true} />
+                <HeatMapLayer arrestData={arrestData} enabled={true} />
                 {(onCursorMove || onMapClick) && <CursorTracker onCursorMove={onCursorMove} onMapClick={onMapClick} />}
             </MapContainer>
         </div>

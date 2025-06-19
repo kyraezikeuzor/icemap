@@ -204,8 +204,20 @@ function CountyCaseHeatMap({ enabled = true }) {
 
                         // Close the tooltip on mouseout
                         setTimeout(() => layer.closeTooltip(), 300);
+                    },
+                    click: function (e) {
+                        const l = e.target;
+                        l.setStyle({
+                            weight: 2.5,
+                            color: '#800000', // Maroon color
+                            fillOpacity: 0.95,
+                            dashArray: ''
+                        });
+
+                        if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
+                            l.bringToFront();
+                        }
                     }
-                    // No click event
                 });
             }
         });
