@@ -30,7 +30,7 @@ function InfoModal({ isOpen, onClose }) {
                         observe.
                     </p>
                     <p>
-                        We collect zero user data, nor do we involve any user interaction to source the data for our analysis.
+                        We collect zero individual user data, nor do we involve any user interaction to source the data for our analysis.
                     </p>
                     <button className="continue-button" onClick={onClose}>
                         Continue
