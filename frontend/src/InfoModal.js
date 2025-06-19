@@ -18,15 +18,12 @@ function InfoModal({ isOpen, onClose }) {
                         with specific focus on its Enforcement and Removal Operations department (ERO).
                     </p>
                     <p>
-                        icemap aggregates both unstructured and structured data from a multitude of sources, consolidating this signal into useful
+                        icemap aggregates both unstructured and structured data from a multitude of public online sources, consolidating this signal into useful
                         information for the American people.
                     </p>
                     <p>
                         Icemap does not aim to hinder operations nor spark fear, but instead provide a lens with which the American people can
                         observe.
-                    </p>
-                    <p>
-                        Our realization is that transparency, not abstract political messaging, will best aid the American public.
                     </p>
                     <button className="continue-button" onClick={onClose}>
                         Continue
