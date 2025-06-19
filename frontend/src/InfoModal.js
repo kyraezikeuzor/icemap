@@ -25,6 +25,9 @@ function InfoModal({ isOpen, onClose }) {
                         icemap does not aim to hinder operations nor spark fear, but instead provide a lens with which the American people can
                         observe.
                     </p>
+                    <p>
+                        We collect zero user data, nor do we involve any user interaction to source the data for our analysis.
+                    </p>
                     <button className="continue-button" onClick={onClose}>
                         Continue
                     </button>
