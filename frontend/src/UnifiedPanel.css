@@ -484,3 +484,17 @@
 .news-content::-webkit-scrollbar-thumb:hover {
     background: #555;
 }
+
+.incident-category-tag {
+    display: inline-block;
+    margin-left: 8px;
+    padding: 2px 8px;
+    font-size: 0.75em;
+    background: #e0e0e0;
+    color: #333;
+    border-radius: 12px;
+    vertical-align: middle;
+    font-weight: 500;
+    letter-spacing: 0.03em;
+    opacity: 0.85;
+}

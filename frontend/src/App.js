@@ -70,9 +70,9 @@ function App() {
     }, []);
 
     useEffect(() => {
-        const loadArrestData = async () => {
+        const loadIncidentData = async () => {
             try {
-                const response = await fetch('/arrests_with_titles.csv');
+                const response = await fetch('/newsroom_incidents.csv');
                 const csvText = await response.text();
 
                 // Parse CSV with proper handling of quoted fields
@@ -82,28 +82,29 @@ function App() {
                 const data = lines.slice(1).map(line => {
                     if (!line.trim()) return null; // Skip empty lines
                     const values = parseCSVLine(line);
-                    const arrest = {};
+                    const incident = {};
                     headers.forEach((header, index) => {
-                        arrest[header.trim()] = values[index] ? values[index].trim() : '';
+                        if (header.trim() === 'reported_count') return; // Ignore reported_count
+                        incident[header.trim()] = values[index] ? values[index].trim() : '';
                     });
-                    return arrest;
-                }).filter(arrest =>
-                    arrest &&
-                    arrest.latitude &&
-                    arrest.longitude &&
-                    !isNaN(parseFloat(arrest.latitude)) &&
-                    !isNaN(parseFloat(arrest.longitude))
+                    return incident;
+                }).filter(incident =>
+                    incident &&
+                    incident.latitude &&
+                    incident.longitude &&
+                    !isNaN(parseFloat(incident.latitude)) &&
+                    !isNaN(parseFloat(incident.longitude))
                 );
 
                 setArrestData(data);
             } catch (error) {
-                console.error('Error loading arrest data:', error);
+                console.error('Error loading incident data:', error);
             } finally {
                 setLoading(false);
             }
         };
 
-        loadArrestData();
+        loadIncidentData();
     }, []);
 
     const closeModal = () => {
