@@ -22,6 +22,10 @@ function InfoModal({ isOpen, onClose }) {
                         Currently, this vizualization pulls statistics and articles from ICE newsroom reports, TRAC immigration data, as well as a myriad of local and national news sources.
                     </p>
                     <p>
+                        These sources originate from both left and right-leaning news sources, and we do not see it our aim to ideologically favor certain sources over others. We recommend that the user
+                        perform their own due diligence to formulate an informed opinion on the events provided.
+                    </p>
+                    <p>
                         icemap does not aim to hinder operations nor spark fear, but instead provide a lens with which the American people can
                         observe.
                     </p>
