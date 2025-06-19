@@ -235,12 +235,17 @@ function UnifiedPanel({ cursorPosition, arrestData, onMapClick, isMobile }) {
                 }).filter(article => article && article.title && article.url);
 
                 // Combine and sort by date (newest first)
-                const combinedArticles = [...mediacloudArticles, ...newsroomArticles]
+                let combinedArticles = [...mediacloudArticles, ...newsroomArticles]
                     .sort((a, b) => {
                         const dateA = new Date(a.date);
                         const dateB = new Date(b.date);
                         return dateB - dateA;
                     });
+
+                // Deprioritize ice.gov articles: move them to the bottom, but keep date order within each group
+                const nonIceArticles = combinedArticles.filter(article => !(article.url && article.url.includes('ice.gov')));
+                const iceArticles = combinedArticles.filter(article => article.url && article.url.includes('ice.gov'));
+                combinedArticles = [...nonIceArticles, ...iceArticles];
 
                 setAllArticles(combinedArticles);
                 setArticles(combinedArticles.slice(0, 20));
@@ -282,7 +287,11 @@ function UnifiedPanel({ cursorPosition, arrestData, onMapClick, isMobile }) {
         setLoadingMoreArticles(true);
         await new Promise(resolve => setTimeout(resolve, 300));
 
-        const nextBatch = allArticles.slice(displayedArticleCount, displayedArticleCount + 20);
+        // Always apply deprioritization when loading more
+        const nonIceArticles = allArticles.filter(article => !(article.url && article.url.includes('ice.gov')));
+        const iceArticles = allArticles.filter(article => article.url && article.url.includes('ice.gov'));
+        const sortedArticles = [...nonIceArticles, ...iceArticles];
+        const nextBatch = sortedArticles.slice(displayedArticleCount, displayedArticleCount + 20);
         setArticles(prev => [...prev, ...nextBatch]);
         setDisplayedArticleCount(prev => prev + 20);
         setLoadingMoreArticles(false);
