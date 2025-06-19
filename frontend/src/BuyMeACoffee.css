@@ -7,12 +7,25 @@
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* When news panel is collapsed on non-mobile, move button to the right */
+.buy-me-coffee.news-collapsed {
+    right: 60px;
+    /* Position to the left of the collapsed news panel (40px sliver + 20px margin) */
+}
+
 .buy-me-coffee.mobile {
     top: 5px;
     left: 50%;
     transform: translateX(-50%);
     right: auto;
     /* Position above the icemap.dev label on mobile with proper spacing */
+}
+
+/* Ensure mobile positioning is not affected by news-collapsed class */
+.buy-me-coffee.mobile.news-collapsed {
+    right: auto;
+    left: 50%;
+    transform: translateX(-50%);
 }
 
 .coffee-button {

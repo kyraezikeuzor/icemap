@@ -52,6 +52,7 @@ function App() {
     const [cursorPosition, setCursorPosition] = useState(null);
     const [mapClickCount, setMapClickCount] = useState(0);
     const [isMobile, setIsMobile] = useState(false);
+    const [newsPanelCollapsed, setNewsPanelCollapsed] = useState(false);
 
     // Detect mobile device on mount and window resize
     useEffect(() => {
@@ -119,6 +120,10 @@ function App() {
         setMapClickCount(prev => prev + 1);
     };
 
+    const handleNewsPanelCollapseChange = (collapsed) => {
+        setNewsPanelCollapsed(collapsed);
+    };
+
     if (loading) {
         return (
             <div className="loading">
@@ -130,7 +135,7 @@ function App() {
     return (
         <div className="App">
             <InfoModal isOpen={showModal} onClose={closeModal} />
-            <BuyMeACoffee isMobile={isMobile} />
+            <BuyMeACoffee isMobile={isMobile} newsPanelCollapsed={newsPanelCollapsed} />
             <IncidentsPanel
                 cursorPosition={cursorPosition}
                 arrestData={arrestData}
@@ -142,7 +147,7 @@ function App() {
                 onCursorMove={handleCursorMove}
                 onMapClick={handleMapClick}
             />
-            <NewsPanel isMobile={isMobile} />
+            <NewsPanel isMobile={isMobile} onCollapseChange={handleNewsPanelCollapseChange} />
         </div>
     );
 }

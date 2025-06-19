@@ -34,7 +34,7 @@ function parseCSVLine(line) {
     return result;
 }
 
-function NewsPanel({ isMobile }) {
+function NewsPanel({ isMobile, onCollapseChange }) {
     const [articles, setArticles] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isCollapsed, setIsCollapsed] = useState(isMobile);
@@ -52,6 +52,13 @@ function NewsPanel({ isMobile }) {
 
         return () => clearInterval(timer);
     }, []);
+
+    // Notify parent of collapse state changes
+    useEffect(() => {
+        if (onCollapseChange) {
+            onCollapseChange(isCollapsed);
+        }
+    }, [isCollapsed, onCollapseChange]);
 
     useEffect(() => {
         const loadArticles = async () => {
