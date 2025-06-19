@@ -11,6 +11,7 @@ function CountyCaseHeatMap({ enabled = true }) {
     const map = useMap();
     const [countyData, setCountyData] = useState(null);
     const [caseData, setCaseData] = useState({});
+    const [selectedCountyId, setSelectedCountyId] = useState(null); // Track selected county
     const geojsonLayerRef = useRef(null);
 
     useEffect(() => {
@@ -122,36 +123,38 @@ function CountyCaseHeatMap({ enabled = true }) {
 
         // Style function for the GeoJSON
         const style = (feature) => {
-            // Extract the county FIPS code from the GeoJSON
             const countyId = feature.id;
-
-            // Get the case count using the county FIPS code
             const caseCount = caseData[countyId] || 0;
-
-            // Get the color and opacity based on case count
-            let fillColor = '#ffffff'; // Default to white
-            let fillOpacity = 0.2;     // Slightly higher minimum opacity for better visibility
+            let fillColor = '#ffffff';
+            let fillOpacity = 0.2;
+            let borderColor = '#e34a33';
+            let borderWeight = 0.8;
+            let zIndex = 100;
 
             if (caseCount > 0) {
-                // Use min-max scaling for better color distribution
                 fillColor = colorScale(caseCount);
-
-                // High contrast opacity scale
                 const opacityScale = d3Scale.scaleLinear()
                     .domain([minCount, maxCount])
-                    .range([0.5, 0.95]);  // Higher minimum opacity for better visibility
-
+                    .range([0.5, 0.95]);
                 fillOpacity = opacityScale(caseCount);
+            }
+
+            // Highlight selected county
+            if (selectedCountyId && countyId === selectedCountyId) {
+                borderColor = '#800000'; // Maroon
+                borderWeight = 3;
+                fillOpacity = 0.7;
+                zIndex = 500;
             }
 
             return {
                 fillColor: fillColor,
-                weight: 0.8,                // Slightly thicker borders for better definition
-                opacity: 0.7,               // More visible borders
-                color: '#e34a33',           // Softer red for borders
+                weight: borderWeight,
+                opacity: 1,
+                color: borderColor,
                 fillOpacity: fillOpacity,
                 className: 'county-polygon',
-                zIndex: 100
+                zIndex: zIndex
             };
         };
 
@@ -206,16 +209,13 @@ function CountyCaseHeatMap({ enabled = true }) {
                         setTimeout(() => layer.closeTooltip(), 300);
                     },
                     click: function (e) {
-                        const l = e.target;
-                        l.setStyle({
-                            weight: 2.5,
-                            color: '#800000', // Maroon color
-                            fillOpacity: 0.95,
-                            dashArray: ''
-                        });
-
-                        if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
-                            l.bringToFront();
+                        setSelectedCountyId(countyId); // Set selected county
+                    },
+                    mousedown: function (e) {
+                        // Prevent Leaflet's default highlight (green flash)
+                        if (e.originalEvent) {
+                            e.originalEvent.preventDefault();
+                            e.originalEvent.stopPropagation();
                         }
                     }
                 });
@@ -245,7 +245,7 @@ function CountyCaseHeatMap({ enabled = true }) {
             }
         };
 
-    }, [map, countyData, caseData, enabled]);
+    }, [map, countyData, caseData, enabled, selectedCountyId]);
 
     return null;
 }

@@ -211,23 +211,14 @@ function CursorTracker({ onCursorMove, onMapClick }) {
             onCursorMove(null);
         };
 
-        const handleClick = (e) => {
-            // Trigger map click event
-            if (onMapClick) {
-                onMapClick();
-            }
-        };
-
         map.on('mousemove', handleMouseMove);
         map.on('mouseout', handleMouseLeave);
-        map.on('click', handleClick);
 
         return () => {
             map.off('mousemove', handleMouseMove);
             map.off('mouseout', handleMouseLeave);
-            map.off('click', handleClick);
         };
-    }, [map, onCursorMove, onMapClick]);
+    }, [map, onCursorMove]);
 
     return null;
 }
