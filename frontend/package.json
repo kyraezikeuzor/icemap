@@ -1,7 +1,7 @@
 {
     "name": "icemap-frontend",
     "version": "1.0.0",
-    "description": "Minimalist React frontend for ICE arrest map",
+    "description": "Minimalist React frontend for ICE Map - Visualizing ICE activity",
     "main": "index.js",
     "scripts": {
         "start": "react-scripts start",
