@@ -74,59 +74,6 @@ try {
 function HeatMapLayer({ arrestData, enabled = true }) {
     const map = useMap();
     const heatLayerRef = useRef(null);
-    const [currentZoom, setCurrentZoom] = useState(map.getZoom());
-
-    // Function to calculate clustering radius based on zoom level
-    const getClusterRadius = (zoom) => {
-        if (zoom >= 10) return 0.001; // Very close points at high zoom
-        if (zoom >= 8) return 0.005;  // Close points at medium-high zoom
-        if (zoom >= 6) return 0.02;   // Medium distance at medium zoom
-        if (zoom >= 4) return 0.05;   // Further distance at low-medium zoom
-        return 0.1;                   // Far distance at low zoom
-    };
-
-    // Function to cluster points based on proximity
-    const clusterPoints = (points, radius) => {
-        const clusters = [];
-        const used = new Set();
-
-        points.forEach((point, index) => {
-            if (used.has(index)) return;
-
-            const cluster = [point];
-            used.add(index);
-
-            // Find nearby points
-            points.forEach((otherPoint, otherIndex) => {
-                if (used.has(otherIndex)) return;
-
-                const distance = Math.sqrt(
-                    Math.pow(point.lat - otherPoint.lat, 2) +
-                    Math.pow(point.lng - otherPoint.lng, 2)
-                );
-
-                if (distance <= radius) {
-                    cluster.push(otherPoint);
-                    used.add(otherIndex);
-                }
-            });
-
-            clusters.push(cluster);
-        });
-
-        return clusters;
-    };
-
-    // Function to create heat map data from clusters
-    const createHeatMapData = (clusters) => {
-        return clusters.map(cluster => {
-            const centerLat = cluster.reduce((sum, p) => sum + p.lat, 0) / cluster.length;
-            const centerLng = cluster.reduce((sum, p) => sum + p.lng, 0) / cluster.length;
-            const intensity = cluster.length; // Intensity based on number of points in cluster
-
-            return [centerLat, centerLng, intensity];
-        });
-    };
 
     useEffect(() => {
         if (!arrestData || arrestData.length === 0 || !enabled) return;
@@ -140,11 +87,6 @@ function HeatMapLayer({ arrestData, enabled = true }) {
             }))
             .filter(point => !isNaN(point.lat) && !isNaN(point.lng));
 
-        // Get current zoom and cluster radius
-        const radius = getClusterRadius(currentZoom);
-        const clusters = clusterPoints(points, radius);
-        const heatMapData = createHeatMapData(clusters);
-
         // Remove existing heat layer
         if (heatLayerRef.current) {
             map.removeLayer(heatLayerRef.current);
@@ -152,8 +94,8 @@ function HeatMapLayer({ arrestData, enabled = true }) {
 
         // Create new heat layer with yellow-to-dark-maroon gradient
         // The pane is now handled directly in the HeatLayer function
-        heatLayerRef.current = HeatLayer(heatMapData, {
-            radius: Math.max(25, 60 - currentZoom * 2), // Slightly larger radius
+        heatLayerRef.current = HeatLayer(points, {
+            radius: 25,
             blur: 20,
             maxZoom: 10,
             gradient: {
@@ -173,20 +115,7 @@ function HeatMapLayer({ arrestData, enabled = true }) {
                 map.removeLayer(heatLayerRef.current);
             }
         };
-    }, [arrestData, currentZoom, map, enabled]);
-
-    // Listen for zoom changes
-    useEffect(() => {
-        const handleZoomEnd = () => {
-            setCurrentZoom(map.getZoom());
-        };
-
-        map.on('zoomend', handleZoomEnd);
-
-        return () => {
-            map.off('zoomend', handleZoomEnd);
-        };
-    }, [map]);
+    }, [arrestData, map, enabled]);
 
     return null;
 }
@@ -214,11 +143,21 @@ function CursorTracker({ onCursorMove, onMapClick }) {
         map.on('mousemove', handleMouseMove);
         map.on('mouseout', handleMouseLeave);
 
+        // Priority: always fire onMapClick on map click
+        let clickHandler;
+        if (onMapClick) {
+            clickHandler = () => onMapClick();
+            map.on('click', clickHandler);
+        }
+
         return () => {
             map.off('mousemove', handleMouseMove);
             map.off('mouseout', handleMouseLeave);
+            if (onMapClick && clickHandler) {
+                map.off('click', clickHandler);
+            }
         };
-    }, [map, onCursorMove]);
+    }, [map, onCursorMove, onMapClick]);
 
     return null;
 }
