@@ -2,6 +2,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import { MapContainer, TileLayer, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import './Branding.css';
+import CountyCaseHeatMap from './components/CountyCaseHeatMap';
+import MapControls from './components/MapControls';
 
 // Fix for default markers in react-leaflet
 delete L.Icon.Default.prototype._getIconUrl;
@@ -38,7 +40,7 @@ try {
 }
 
 // Heat map layer component
-function HeatMapLayer({ arrestData }) {
+function HeatMapLayer({ arrestData, enabled = true }) {
     const map = useMap();
     const heatLayerRef = useRef(null);
     const [currentZoom, setCurrentZoom] = useState(map.getZoom());
@@ -96,7 +98,7 @@ function HeatMapLayer({ arrestData }) {
     };
 
     useEffect(() => {
-        if (!arrestData || arrestData.length === 0) return;
+        if (!arrestData || arrestData.length === 0 || !enabled) return;
 
         // Convert arrest data to points
         const points = arrestData
@@ -117,11 +119,18 @@ function HeatMapLayer({ arrestData }) {
             map.removeLayer(heatLayerRef.current);
         }
 
+        // Create a custom pane for the heat map layer with higher z-index
+        if (!map.getPane('heatPane')) {
+            map.createPane('heatPane');
+            map.getPane('heatPane').style.zIndex = 450; // Higher value to ensure it's above the county layer (default overlay pane is 400)
+        }
+
         // Create new heat layer with yellow-to-dark-maroon gradient
         heatLayerRef.current = HeatLayer(heatMapData, {
             radius: Math.max(25, 60 - currentZoom * 2), // Slightly larger radius
             blur: 20,
             maxZoom: 10,
+            pane: 'heatPane', // Use the custom heat pane
             gradient: {
                 0.0: '#FFFF00',   // Yellow for low intensity
                 0.2: '#FFD700',   // Gold
@@ -139,7 +148,7 @@ function HeatMapLayer({ arrestData }) {
                 map.removeLayer(heatLayerRef.current);
             }
         };
-    }, [arrestData, currentZoom, map]);
+    }, [arrestData, currentZoom, map, enabled]);
 
     // Listen for zoom changes
     useEffect(() => {
@@ -199,6 +208,19 @@ function CursorTracker({ onCursorMove, onMapClick }) {
 }
 
 function MapComponent({ arrestData, onCursorMove, onMapClick }) {
+    const [showCountyLayer, setShowCountyLayer] = useState(true);
+    const [showHeatMapLayer, setShowHeatMapLayer] = useState(true);
+    
+    // Handle toggle county layer
+    const handleToggleCountyLayer = (isVisible) => {
+        setShowCountyLayer(isVisible);
+    };
+    
+    // Handle toggle heat map layer
+    const handleToggleHeatMapLayer = (isVisible) => {
+        setShowHeatMapLayer(isVisible);
+    };
+    
     // Calculate center of the map based on data
     const center = arrestData.length > 0
         ? [
@@ -212,6 +234,10 @@ function MapComponent({ arrestData, onCursorMove, onMapClick }) {
             <div className="branding-overlay">
                 icemap.dev
             </div>
+            <MapControls 
+                onToggleCountyLayer={handleToggleCountyLayer} 
+                onToggleHeatMapLayer={handleToggleHeatMapLayer} 
+            />
             <MapContainer
                 center={center}
                 zoom={4}
@@ -222,11 +248,13 @@ function MapComponent({ arrestData, onCursorMove, onMapClick }) {
                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                     url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
                 />
-                <HeatMapLayer arrestData={arrestData} />
+                {/* Add the county case map layer (blue) underneath the heat map layer */}
+                <CountyCaseHeatMap enabled={showCountyLayer} />
+                <HeatMapLayer arrestData={arrestData} enabled={showHeatMapLayer} />
                 {(onCursorMove || onMapClick) && <CursorTracker onCursorMove={onCursorMove} onMapClick={onMapClick} />}
             </MapContainer>
         </div>
     );
 }
 
-export default MapComponent; 
+export default MapComponent;
