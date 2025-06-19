@@ -14,15 +14,15 @@ function InfoModal({ isOpen, onClose }) {
                         We strongly believe that the American people should have full insight into the actions of its democratically-elected government.
                     </p>
                     <p>
-                        icemap.dev aims to educate the American people on the activities and injustices of America's Immigration Customs Agency (ICE),
+                        icemap.dev aims to provide a comprehensive view of the activities and the injustices of America's Immigration Customs Agency (ICE),
                         with specific focus on its Enforcement and Removal Operations department (ERO).
                     </p>
                     <p>
                         icemap aggregates both unstructured and structured data from a multitude of public online sources, consolidating this signal into useful
-                        information for the American people.
+                        information
                     </p>
                     <p>
-                        Icemap does not aim to hinder operations nor spark fear, but instead provide a lens with which the American people can
+                        icemap does not aim to hinder operations nor spark fear, but instead provide a lens with which the American people can
                         observe.
                     </p>
                     <button className="continue-button" onClick={onClose}>

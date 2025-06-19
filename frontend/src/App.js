@@ -3,6 +3,7 @@ import MapComponent from './MapComponent';
 import InfoModal from './InfoModal';
 import NewsPanel from './NewsPanel';
 import IncidentsPanel from './IncidentsPanel';
+import BuyMeACoffee from './BuyMeACoffee';
 import './App.css';
 
 // Helper function to detect mobile devices
@@ -129,6 +130,7 @@ function App() {
     return (
         <div className="App">
             <InfoModal isOpen={showModal} onClose={closeModal} />
+            <BuyMeACoffee isMobile={isMobile} />
             <IncidentsPanel
                 cursorPosition={cursorPosition}
                 arrestData={arrestData}

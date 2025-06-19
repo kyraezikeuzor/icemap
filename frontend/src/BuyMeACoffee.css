@@ -1,0 +1,115 @@
+.buy-me-coffee {
+    position: fixed;
+    top: 20px;
+    right: 340px;
+    /* Position to the left of the news panel */
+    z-index: 1000;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.buy-me-coffee.mobile {
+    top: 15px;
+    right: 130px;
+    /* Adjust for mobile news panel width */
+}
+
+.coffee-button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 20px;
+    background: linear-gradient(135deg, #444 0%, #333 100%);
+    border: none;
+    border-radius: 8px;
+    color: white;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    text-decoration: none;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+    min-width: 140px;
+    justify-content: center;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.coffee-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+    background: linear-gradient(135deg, #555 0%, #444 100%);
+}
+
+.coffee-button:active {
+    transform: translateY(0);
+    transition: all 0.1s ease;
+}
+
+.coffee-icon {
+    font-size: 16px;
+    animation: coffeeSteam 2s ease-in-out infinite;
+    color: #ccc;
+}
+
+.coffee-text {
+    white-space: nowrap;
+    color: white;
+    font-weight: 500;
+}
+
+/* Mobile styling */
+.buy-me-coffee.mobile .coffee-button {
+    padding: 8px 12px;
+    font-size: 12px;
+    min-width: 100px;
+    gap: 6px;
+}
+
+.buy-me-coffee.mobile .coffee-icon {
+    font-size: 14px;
+}
+
+.buy-me-coffee.mobile .coffee-text {
+    display: none;
+    /* Hide text on mobile, show only icon */
+}
+
+/* Coffee steam animation */
+@keyframes coffeeSteam {
+
+    0%,
+    100% {
+        transform: translateY(0) rotate(0deg);
+        opacity: 1;
+    }
+
+    50% {
+        transform: translateY(-2px) rotate(5deg);
+        opacity: 0.8;
+    }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .buy-me-coffee {
+        right: 130px;
+    }
+
+    .buy-me-coffee .coffee-text {
+        display: none;
+    }
+
+    .buy-me-coffee .coffee-button {
+        min-width: auto;
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        padding: 0;
+        justify-content: center;
+    }
+}
+
+/* Ensure button stays above other elements */
+.coffee-button {
+    z-index: 1001;
+}
