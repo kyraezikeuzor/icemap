@@ -23,7 +23,7 @@ import mediacloud.api  # v4 client (≥ 4.0)
 # ─────────────────────────────
 load_dotenv()
 
-API_KEY = os.getenv("MEDIACLOUD_API_KEY")
+API_KEY = os.getenv("MEDIACLOUD_API_KEY_4")
 if not API_KEY:
     sys.exit("❌  MEDIACLOUD_API_KEY not found in your .env file")
 
@@ -101,10 +101,13 @@ def fetch_articles(
         for story in page:
             url = story.get("url")
             if url and url not in seen:
+                title = story.get("title", "")
+                description = story.get("description", "")
+                
                 new_rows.append(
                     {
-                        "title": story.get("title", "").strip(),
-                        "description": story.get("description", "").strip(),
+                        "title": title.strip() if title else "",
+                        "description": description.strip() if description else "",
                         "date": story.get("publish_date", ""),
                         "url": url,
                     }
