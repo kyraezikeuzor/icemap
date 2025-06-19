@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import MapComponent from './MapComponent';
 import InfoModal from './InfoModal';
-import NewsPanel from './NewsPanel';
-import IncidentsPanel from './IncidentsPanel';
+import UnifiedPanel from './UnifiedPanel';
 import BuyMeACoffee from './BuyMeACoffee';
 import './App.css';
 
@@ -52,7 +51,7 @@ function App() {
     const [cursorPosition, setCursorPosition] = useState(null);
     const [mapClickCount, setMapClickCount] = useState(0);
     const [isMobile, setIsMobile] = useState(false);
-    const [newsPanelCollapsed, setNewsPanelCollapsed] = useState(false);
+    const [panelCollapsed, setPanelCollapsed] = useState(false);
 
     // Detect mobile device on mount and window resize
     useEffect(() => {
@@ -120,8 +119,8 @@ function App() {
         setMapClickCount(prev => prev + 1);
     };
 
-    const handleNewsPanelCollapseChange = (collapsed) => {
-        setNewsPanelCollapsed(collapsed);
+    const handlePanelCollapseChange = (collapsed) => {
+        setPanelCollapsed(collapsed);
     };
 
     if (loading) {
@@ -135,19 +134,19 @@ function App() {
     return (
         <div className="App">
             <InfoModal isOpen={showModal} onClose={closeModal} />
-            <BuyMeACoffee isMobile={isMobile} newsPanelCollapsed={newsPanelCollapsed} />
-            <IncidentsPanel
+            <BuyMeACoffee isMobile={isMobile} newsPanelCollapsed={panelCollapsed} />
+            <UnifiedPanel
                 cursorPosition={cursorPosition}
                 arrestData={arrestData}
                 onMapClick={mapClickCount}
                 isMobile={isMobile}
+                onCollapseChange={handlePanelCollapseChange}
             />
             <MapComponent
                 arrestData={arrestData}
                 onCursorMove={handleCursorMove}
                 onMapClick={handleMapClick}
             />
-            <NewsPanel isMobile={isMobile} onCollapseChange={handleNewsPanelCollapseChange} />
         </div>
     );
 }

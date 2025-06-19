@@ -167,7 +167,8 @@ function CursorTracker({ onCursorMove, onMapClick }) {
             const latlng = map.containerPointToLatLng([e.originalEvent.clientX, e.originalEvent.clientY]);
             onCursorMove({
                 lat: latlng.lat,
-                lng: latlng.lng
+                lng: latlng.lng,
+                zoom: map.getZoom()
             });
         };
 

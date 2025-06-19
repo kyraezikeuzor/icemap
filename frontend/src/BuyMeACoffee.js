@@ -8,7 +8,7 @@ function BuyMeACoffee({ isMobile, newsPanelCollapsed }) {
     };
 
     return (
-        <div className={`buy-me-coffee ${isMobile ? 'mobile' : ''} ${!isMobile && newsPanelCollapsed ? 'news-collapsed' : ''}`}>
+        <div className={`buy-me-coffee ${isMobile ? 'mobile' : ''} ${!isMobile && newsPanelCollapsed ? 'panel-collapsed' : ''}`}>
             <button
                 className="coffee-button"
                 onClick={handleClick}

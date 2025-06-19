@@ -1,31 +1,31 @@
 .buy-me-coffee {
     position: fixed;
     top: 20px;
-    right: 340px;
-    /* Position to the left of the news panel */
+    left: 340px;
+    /* Position to the right of the unified panel */
     z-index: 1000;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* When news panel is collapsed on non-mobile, move button to the right */
-.buy-me-coffee.news-collapsed {
-    right: 60px;
-    /* Position to the left of the collapsed news panel (40px sliver + 20px margin) */
+/* When unified panel is collapsed on non-mobile, move button to the left */
+.buy-me-coffee.panel-collapsed {
+    left: 60px;
+    /* Position to the right of the collapsed unified panel (40px sliver + 20px margin) */
 }
 
 .buy-me-coffee.mobile {
-    top: 5px;
-    left: 50%;
-    transform: translateX(-50%);
-    right: auto;
-    /* Position above the icemap.dev label on mobile with proper spacing */
+    top: 10px;
+    left: auto;
+    right: 10px;
+    transform: none;
+    /* Position in top right corner on mobile */
 }
 
-/* Ensure mobile positioning is not affected by news-collapsed class */
-.buy-me-coffee.mobile.news-collapsed {
-    right: auto;
-    left: 50%;
-    transform: translateX(-50%);
+/* Ensure mobile positioning is not affected by panel-collapsed class */
+.buy-me-coffee.mobile.panel-collapsed {
+    right: 10px;
+    left: auto;
+    transform: none;
 }
 
 .coffee-button {
@@ -85,8 +85,8 @@
 }
 
 .buy-me-coffee.mobile .coffee-text {
-    display: none;
-    /* Hide text on mobile, show only icon */
+    /* Show text on mobile */
+    display: inline;
 }
 
 /* Coffee steam animation */
@@ -107,22 +107,22 @@
 /* Responsive adjustments */
 @media (max-width: 768px) {
     .buy-me-coffee {
-        top: 5px;
-        left: 50%;
-        transform: translateX(-50%);
-        right: auto;
+        top: 10px;
+        left: auto;
+        right: 10px;
+        transform: none;
     }
 
     .buy-me-coffee .coffee-text {
-        display: none;
+        display: inline;
     }
 
     .buy-me-coffee .coffee-button {
         min-width: auto;
-        width: 40px;
-        height: 40px;
+        width: auto;
+        height: auto;
         border-radius: 8px;
-        padding: 0;
+        padding: 8px 12px;
         justify-content: center;
     }
 }
