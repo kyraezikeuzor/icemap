@@ -1,0 +1,39 @@
+.branding-overlay {
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    color: #fff;
+    font-family: 'Inconsolata', monospace;
+    font-size: 24px;
+    font-weight: 300;
+    padding: 15px 25px;
+    background: rgba(0, 0, 0, 0.6);
+    border-radius: 8px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease;
+    pointer-events: none;
+}
+
+.branding-overlay:hover {
+    background: rgba(0, 0, 0, 0.7);
+    transform: translateX(-50%) scale(1.05);
+}
+
+/* Responsive design for branding */
+@media (max-width: 768px) {
+    .branding-overlay {
+        font-size: 20px;
+        padding: 12px 20px;
+    }
+}
+
+@media (max-width: 480px) {
+    .branding-overlay {
+        font-size: 18px;
+        padding: 10px 16px;
+    }
+}

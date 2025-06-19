@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { MapContainer, TileLayer, useMap } from 'react-leaflet';
 import L from 'leaflet';
+import './Branding.css';
 
 // Fix for default markers in react-leaflet
 delete L.Icon.Default.prototype._getIconUrl;
@@ -37,10 +38,9 @@ try {
 }
 
 // Heat map layer component
-function HeatMapLayer({ arrestData, onAreaClick }) {
+function HeatMapLayer({ arrestData }) {
     const map = useMap();
     const heatLayerRef = useRef(null);
-    const clickIndicatorRef = useRef(null);
     const [currentZoom, setCurrentZoom] = useState(map.getZoom());
 
     // Function to calculate clustering radius based on zoom level
@@ -95,22 +95,6 @@ function HeatMapLayer({ arrestData, onAreaClick }) {
         });
     };
 
-    // Function to find incidents within a clicked area
-    const findIncidentsInArea = (clickLat, clickLng, radius) => {
-        return arrestData.filter(arrest => {
-            const lat = parseFloat(arrest.latitude);
-            const lng = parseFloat(arrest.longitude);
-
-            if (isNaN(lat) || isNaN(lng)) return false;
-
-            const distance = Math.sqrt(
-                Math.pow(lat - clickLat, 2) + Math.pow(lng - clickLng, 2)
-            );
-
-            return distance <= radius;
-        });
-    };
-
     useEffect(() => {
         if (!arrestData || arrestData.length === 0) return;
 
@@ -150,61 +134,12 @@ function HeatMapLayer({ arrestData, onAreaClick }) {
 
         map.addLayer(heatLayerRef.current);
 
-        // Add click handler to the map with improved detection
-        const handleMapClick = (e) => {
-            console.log('Map clicked at:', e.latlng); // Debug log
-
-            // Add a visual click indicator
-            if (clickIndicatorRef.current) {
-                map.removeLayer(clickIndicatorRef.current);
-            }
-
-            clickIndicatorRef.current = L.circleMarker([e.latlng.lat, e.latlng.lng], {
-                radius: 8,
-                fillColor: '#FF0000',
-                color: '#FF0000',
-                weight: 2,
-                opacity: 1,
-                fillOpacity: 0.8
-            }).addTo(map);
-
-            // Remove the indicator after 2 seconds
-            setTimeout(() => {
-                if (clickIndicatorRef.current) {
-                    map.removeLayer(clickIndicatorRef.current);
-                    clickIndicatorRef.current = null;
-                }
-            }, 2000);
-
-            // Use a larger click radius for better detection
-            const clickRadius = Math.max(getClusterRadius(currentZoom) * 2, 0.01);
-            console.log('Click radius:', clickRadius); // Debug log
-
-            const incidents = findIncidentsInArea(e.latlng.lat, e.latlng.lng, clickRadius);
-            console.log('Found incidents:', incidents.length); // Debug log
-
-            if (incidents.length > 0) {
-                console.log('Calling onAreaClick with', incidents.length, 'incidents'); // Debug log
-                onAreaClick(incidents);
-            } else {
-                console.log('No incidents found in clicked area'); // Debug log
-            }
-        };
-
-        // Remove any existing click handlers first
-        map.off('click', handleMapClick);
-        map.on('click', handleMapClick);
-
         return () => {
             if (heatLayerRef.current) {
                 map.removeLayer(heatLayerRef.current);
             }
-            if (clickIndicatorRef.current) {
-                map.removeLayer(clickIndicatorRef.current);
-            }
-            map.off('click', handleMapClick);
         };
-    }, [arrestData, currentZoom, map, onAreaClick]);
+    }, [arrestData, currentZoom, map]);
 
     // Listen for zoom changes
     useEffect(() => {
@@ -222,7 +157,47 @@ function HeatMapLayer({ arrestData, onAreaClick }) {
     return null;
 }
 
-function MapComponent({ arrestData, onAreaClick }) {
+// Cursor tracking component
+function CursorTracker({ onCursorMove, onMapClick }) {
+    const map = useMap();
+
+    useEffect(() => {
+        const handleMouseMove = (e) => {
+            // Convert screen coordinates to lat/lng
+            const latlng = map.containerPointToLatLng([e.originalEvent.clientX, e.originalEvent.clientY]);
+            onCursorMove({
+                lat: latlng.lat,
+                lng: latlng.lng
+            });
+        };
+
+        const handleMouseLeave = () => {
+            // Clear cursor position when mouse leaves map
+            onCursorMove(null);
+        };
+
+        const handleClick = (e) => {
+            // Trigger map click event
+            if (onMapClick) {
+                onMapClick();
+            }
+        };
+
+        map.on('mousemove', handleMouseMove);
+        map.on('mouseout', handleMouseLeave);
+        map.on('click', handleClick);
+
+        return () => {
+            map.off('mousemove', handleMouseMove);
+            map.off('mouseout', handleMouseLeave);
+            map.off('click', handleClick);
+        };
+    }, [map, onCursorMove, onMapClick]);
+
+    return null;
+}
+
+function MapComponent({ arrestData, onCursorMove, onMapClick }) {
     // Calculate center of the map based on data
     const center = arrestData.length > 0
         ? [
@@ -233,19 +208,20 @@ function MapComponent({ arrestData, onAreaClick }) {
 
     return (
         <div className="map-container">
+            <div className="branding-overlay">
+                icemap.dev
+            </div>
             <MapContainer
                 center={center}
                 zoom={4}
                 style={{ height: 'calc(100vh - 100px)', width: '100%' }}
-                onClick={(e) => {
-                    console.log('MapContainer clicked at:', e.latlng); // Additional debug
-                }}
             >
                 <TileLayer
                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
                 />
-                <HeatMapLayer arrestData={arrestData} onAreaClick={onAreaClick} />
+                <HeatMapLayer arrestData={arrestData} />
+                {(onCursorMove || onMapClick) && <CursorTracker onCursorMove={onCursorMove} onMapClick={onMapClick} />}
             </MapContainer>
         </div>
     );

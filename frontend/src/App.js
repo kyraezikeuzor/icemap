@@ -1,32 +1,70 @@
 import React, { useState, useEffect } from 'react';
 import MapComponent from './MapComponent';
-import Sidebar from './Sidebar';
+import InfoModal from './InfoModal';
+import NewsPanel from './NewsPanel';
+import IncidentsPanel from './IncidentsPanel';
 import './App.css';
+
+// Helper function to properly parse CSV lines with quoted fields
+function parseCSVLine(line) {
+    const result = [];
+    let current = '';
+    let inQuotes = false;
+
+    for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+
+        if (char === '"') {
+            if (inQuotes && line[i + 1] === '"') {
+                // Escaped quote
+                current += '"';
+                i++; // Skip next quote
+            } else {
+                // Toggle quote state
+                inQuotes = !inQuotes;
+            }
+        } else if (char === ',' && !inQuotes) {
+            // End of field
+            result.push(current.trim());
+            current = '';
+        } else {
+            current += char;
+        }
+    }
+
+    // Add the last field
+    result.push(current.trim());
+
+    return result;
+}
 
 function App() {
     const [arrestData, setArrestData] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [sidebarOpen, setSidebarOpen] = useState(false);
-    const [selectedIncidents, setSelectedIncidents] = useState([]);
+    const [showModal, setShowModal] = useState(true);
+    const [cursorPosition, setCursorPosition] = useState(null);
+    const [mapClickCount, setMapClickCount] = useState(0);
 
     useEffect(() => {
         const loadArrestData = async () => {
             try {
-                const response = await fetch('/arrests.csv');
+                const response = await fetch('/arrests_with_titles.csv');
                 const csvText = await response.text();
 
-                // Simple CSV parsing (assuming no commas in quoted fields)
+                // Parse CSV with proper handling of quoted fields
                 const lines = csvText.split('\n');
-                const headers = lines[0].split(',');
+                const headers = parseCSVLine(lines[0]);
 
                 const data = lines.slice(1).map(line => {
-                    const values = line.split(',');
+                    if (!line.trim()) return null; // Skip empty lines
+                    const values = parseCSVLine(line);
                     const arrest = {};
                     headers.forEach((header, index) => {
                         arrest[header.trim()] = values[index] ? values[index].trim() : '';
                     });
                     return arrest;
                 }).filter(arrest =>
+                    arrest &&
                     arrest.latitude &&
                     arrest.longitude &&
                     !isNaN(parseFloat(arrest.latitude)) &&
@@ -44,17 +82,16 @@ function App() {
         loadArrestData();
     }, []);
 
-    const handleAreaClick = (incidents) => {
-        console.log('handleAreaClick called with', incidents.length, 'incidents');
-        console.log('Current sidebar state:', sidebarOpen);
-        setSelectedIncidents(incidents);
-        setSidebarOpen(true);
-        console.log('Sidebar should now be open');
+    const closeModal = () => {
+        setShowModal(false);
     };
 
-    const handleCloseSidebar = () => {
-        setSidebarOpen(false);
-        setSelectedIncidents([]);
+    const handleCursorMove = (position) => {
+        setCursorPosition(position);
+    };
+
+    const handleMapClick = () => {
+        setMapClickCount(prev => prev + 1);
     };
 
     if (loading) {
@@ -67,40 +104,18 @@ function App() {
 
     return (
         <div className="App">
-            <header className="header">
-                <h1>ICE Arrest Heat Map</h1>
-                <p>{arrestData.length} arrests mapped • Click on heat areas to view incidents</p>
-                {/* Debug info */}
-                <p style={{ fontSize: '0.8rem', opacity: 0.7 }}>
-                    Debug: Sidebar open: {sidebarOpen ? 'Yes' : 'No'} |
-                    Selected incidents: {selectedIncidents.length}
-                </p>
-                {/* Test button */}
-                <button
-                    onClick={() => {
-                        console.log('Test button clicked');
-                        setSelectedIncidents(arrestData.slice(0, 3)); // Test with first 3 incidents
-                        setSidebarOpen(true);
-                    }}
-                    style={{
-                        background: '#FFD700',
-                        color: '#333',
-                        border: 'none',
-                        padding: '8px 16px',
-                        borderRadius: '4px',
-                        cursor: 'pointer',
-                        marginTop: '8px'
-                    }}
-                >
-                    Test Sidebar
-                </button>
-            </header>
-            <MapComponent arrestData={arrestData} onAreaClick={handleAreaClick} />
-            <Sidebar
-                isOpen={sidebarOpen}
-                incidents={selectedIncidents}
-                onClose={handleCloseSidebar}
+            <InfoModal isOpen={showModal} onClose={closeModal} />
+            <IncidentsPanel
+                cursorPosition={cursorPosition}
+                arrestData={arrestData}
+                onMapClick={mapClickCount}
             />
+            <MapComponent
+                arrestData={arrestData}
+                onCursorMove={handleCursorMove}
+                onMapClick={handleMapClick}
+            />
+            <NewsPanel />
         </div>
     );
 }
