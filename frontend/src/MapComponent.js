@@ -214,6 +214,7 @@ function MapComponent({ arrestData, onCursorMove, onMapClick }) {
             <MapContainer
                 center={center}
                 zoom={4}
+                zoomControl={false}
                 style={{ height: 'calc(100vh - 100px)', width: '100%' }}
             >
                 <TileLayer

@@ -8,9 +8,11 @@
 }
 
 .buy-me-coffee.mobile {
-    top: 15px;
-    right: 130px;
-    /* Adjust for mobile news panel width */
+    top: 5px;
+    left: 50%;
+    transform: translateX(-50%);
+    right: auto;
+    /* Position above the icemap.dev label on mobile with proper spacing */
 }
 
 .coffee-button {
@@ -92,7 +94,10 @@
 /* Responsive adjustments */
 @media (max-width: 768px) {
     .buy-me-coffee {
-        right: 130px;
+        top: 5px;
+        left: 50%;
+        transform: translateX(-50%);
+        right: auto;
     }
 
     .buy-me-coffee .coffee-text {

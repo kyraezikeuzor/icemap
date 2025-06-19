@@ -37,7 +37,7 @@ function parseCSVLine(line) {
 function NewsPanel({ isMobile }) {
     const [articles, setArticles] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [isCollapsed, setIsCollapsed] = useState(false);
+    const [isCollapsed, setIsCollapsed] = useState(isMobile);
     const [allArticles, setAllArticles] = useState([]);
     const [displayedCount, setDisplayedCount] = useState(20);
     const [loadingMore, setLoadingMore] = useState(false);
