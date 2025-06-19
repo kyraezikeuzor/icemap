@@ -26,33 +26,34 @@
     transform: translateX(calc(-100% + 40px));
 }
 
-/* collapse handle - vertical bar on the right */
-.collapse-handle {
+/* collapse handle - vertical bar on the right side of incidents panel */
+.incidents-collapse-handle {
     position: absolute;
-    right: -25px;
+    right: 0;
     top: 50%;
     transform: translateY(-50%);
     width: 25px;
     height: 80px;
     background: linear-gradient(135deg, #444 0%, #333 100%);
-    border-radius: 0 6px 6px 0;
+    border-radius: 6px 0 0 6px;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     z-index: 1000;
-    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.4);
+    box-shadow: -2px 0 8px rgba(0, 0, 0, 0.4);
     border: 1px solid #222;
+    border-right: none;
 }
 
-.collapse-handle:hover {
+.incidents-collapse-handle:hover {
     background: linear-gradient(135deg, #555 0%, #444 100%);
     transform: translateY(-50%) scale(1.05);
-    box-shadow: 3px 0 12px rgba(0, 0, 0, 0.5);
+    box-shadow: -3px 0 12px rgba(0, 0, 0, 0.5);
 }
 
-.collapse-handle:active {
+.incidents-collapse-handle:active {
     transform: translateY(-50%) scale(0.95);
     transition: all 0.1s ease;
 }

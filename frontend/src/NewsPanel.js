@@ -184,7 +184,7 @@ function NewsPanel() {
     if (loading) {
         return (
             <div className={`news-panel ${isCollapsed ? 'collapsed' : ''}`}>
-                <div className="collapse-handle" onClick={toggleCollapse}>
+                <div className="news-collapse-handle" onClick={toggleCollapse}>
                     <span className="collapse-icon">{isCollapsed ? '▶' : '◀'}</span>
                 </div>
                 <div className="news-panel-header">
@@ -202,7 +202,7 @@ function NewsPanel() {
 
     return (
         <div className={`news-panel ${isCollapsed ? 'collapsed' : ''}`}>
-            <div className="collapse-handle" onClick={toggleCollapse}>
+            <div className="news-collapse-handle" onClick={toggleCollapse}>
                 <span className="collapse-icon">{isCollapsed ? '◀' : '▶'}</span>
             </div>
             <div className="news-panel-header">

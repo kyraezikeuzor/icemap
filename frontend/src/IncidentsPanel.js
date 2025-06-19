@@ -190,7 +190,7 @@ function IncidentsPanel({ cursorPosition, arrestData, onMapClick }) {
 
     return (
         <div className={`incidents-panel ${isCollapsed ? 'collapsed' : ''}`}>
-            <div className="collapse-handle" onClick={toggleCollapse}>
+            <div className="incidents-collapse-handle" onClick={toggleCollapse}>
                 <span className="collapse-icon">{isCollapsed ? '▶' : '◀'}</span>
             </div>
             <div className="incidents-panel-header">
