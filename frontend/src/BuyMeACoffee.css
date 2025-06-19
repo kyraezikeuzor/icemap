@@ -1,18 +1,17 @@
 .buy-me-coffee {
     position: fixed;
-    top: 20px;
-    left: 340px;
+    bottom: 20px;
+    right: 20px;
     /* Position to the right of the unified panel */
     z-index: 1000;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .buy-me-coffee.mobile {
-    top: 10px;
-    left: auto;
+    bottom: 10px;
     right: 10px;
     transform: none;
-    /* Position in top right corner on mobile */
+    /* Position in bottom right corner on mobile */
 }
 
 .coffee-button {
@@ -112,8 +111,7 @@
 /* Responsive adjustments */
 @media (max-width: 768px) {
     .buy-me-coffee {
-        top: 10px;
-        left: auto;
+        bottom: 10px;
         right: 10px;
         transform: none;
     }
