@@ -2,3 +2,8 @@
 .leaflet-heatmap-layer {
     z-index: 999 !important;
 }
+
+.leaflet-heatmap-layer,
+.leaflet-heat-pane canvas {
+    pointer-events: none !important;
+}

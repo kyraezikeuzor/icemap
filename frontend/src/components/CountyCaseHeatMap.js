@@ -3,49 +3,8 @@ import { GeoJSON, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import * as d3Scale from 'd3-scale';
 import * as d3Interpolate from 'd3-scale-chromatic';
+import { interpolateRgb } from 'd3-interpolate';
 import './CountyCaseHeatMap.css';
-
-// Helper function to create a legend
-const createLegend = (minCount, maxCount) => {
-    const legend = L.control({ position: 'bottomright' });
-    
-    legend.onAdd = (map) => {
-        const div = L.DomUtil.create('div', 'info legend');
-        
-        // Define legend breakpoints
-        const breaks = [0, 10, 50, 100, 500, 1000, Math.round(maxCount)];
-        
-        div.innerHTML = '<div class="legend-title">Case Counts</div>';
-        
-        // Loop through the intervals and generate a label with colored square for each interval
-        for (let i = 0; i < breaks.length - 1; i++) {
-            const from = breaks[i];
-            const to = breaks[i + 1];
-            
-            // Create color scale for legend, matching the map
-            const colorScale = d3Scale.scaleSequential()
-                .domain([0, breaks.length - 1])
-                .interpolator(t => {
-                    // Create a lighter blue palette similar to the example image
-                    if (t < 0.2) return 'rgb(235, 245, 255)';      // Very light blue
-                    if (t < 0.4) return 'rgb(198, 219, 239)';      // Light blue
-                    if (t < 0.6) return 'rgb(158, 202, 225)';      // Medium light blue
-                    if (t < 0.8) return 'rgb(107, 174, 214)';      // Medium blue
-                    return 'rgb(66, 146, 198)';                    // Darker blue (not too dark)
-                });
-                
-            div.innerHTML +=
-                '<div class="legend-item">' +
-                `<i style="background:${colorScale(i / (breaks.length - 2))}"></i> ` +
-                `${from.toLocaleString()}${i === breaks.length - 2 ? '+' : '–' + to.toLocaleString()}` +
-                '</div>';
-        }
-        
-        return div;
-    };
-    
-    return legend;
-};
 
 // County Case Heat Map component
 function CountyCaseHeatMap({ enabled = true }) {
@@ -53,7 +12,6 @@ function CountyCaseHeatMap({ enabled = true }) {
     const [countyData, setCountyData] = useState(null);
     const [caseData, setCaseData] = useState({});
     const geojsonLayerRef = useRef(null);
-    const legendRef = useRef(null);
 
     useEffect(() => {
         // Load the US counties GeoJSON
@@ -73,22 +31,22 @@ function CountyCaseHeatMap({ enabled = true }) {
             try {
                 const response = await fetch('/casesbycounty.csv');
                 const csvText = await response.text();
-                
+
                 const parsedData = {};
-                
+
                 // Parse the CSV
                 const lines = csvText.split('\n');
                 const headers = lines[0].split(',');
-                
+
                 // Process each line of the CSV
                 lines.slice(1).forEach(line => {
                     if (!line.trim()) return;
-                    
+
                     // Handle quoted values that may contain commas
                     let values = [];
                     let inQuotes = false;
                     let currentValue = '';
-                    
+
                     for (let i = 0; i < line.length; i++) {
                         if (line[i] === '"') {
                             inQuotes = !inQuotes;
@@ -99,24 +57,24 @@ function CountyCaseHeatMap({ enabled = true }) {
                             currentValue += line[i];
                         }
                     }
-                    
+
                     // Add the last value
                     values.push(currentValue);
-                    
+
                     // Extract the county ID and case count
                     const countyId = values[0]?.trim();
                     let caseCount = values[1]?.trim();
-                    
+
                     // Remove commas and convert to number
                     if (caseCount) {
                         caseCount = parseInt(caseCount.replace(/,/g, ''), 10);
                     }
-                    
+
                     if (countyId && !isNaN(caseCount)) {
                         parsedData[countyId] = caseCount;
                     }
                 });
-                
+
                 setCaseData(parsedData);
             } catch (error) {
                 console.error('Error loading case count data:', error);
@@ -148,51 +106,52 @@ function CountyCaseHeatMap({ enabled = true }) {
         const minCount = Math.min(...caseCounts) || 0;
         const maxCount = Math.max(...caseCounts) || 1;
 
-        // Create a custom color scale with lighter blues like in the example
+        // Create a custom color scale that is overall redder and starts at a darker baseline
+        const customInterpolator = t => {
+            // t is normalized [0,1] value
+            // For the lowest 40%, blend from #fc9272 (light red) to #de2d26 (dark red)
+            if (t < 0.4) {
+                return interpolateRgb("#fc9272", "#de2d26")(t / 0.4);
+            }
+            // For the rest, blend from #de2d26 (dark red) to #800026 (very dark red)
+            return interpolateRgb("#de2d26", "#800026")((t - 0.4) / 0.6);
+        };
         const colorScale = d3Scale.scaleSequential()
-            .domain([0, maxCount])
-            .interpolator(t => {
-                // Create a lighter blue palette similar to the example image
-                if (t < 0.2) return 'rgb(235, 245, 255)';      // Very light blue
-                if (t < 0.4) return 'rgb(198, 219, 239)';      // Light blue
-                if (t < 0.6) return 'rgb(158, 202, 225)';      // Medium light blue
-                if (t < 0.8) return 'rgb(107, 174, 214)';      // Medium blue
-                return 'rgb(66, 146, 198)';                    // Darker blue (not too dark)
-            });
+            .domain([minCount, maxCount])
+            .interpolator(customInterpolator);
 
         // Style function for the GeoJSON
         const style = (feature) => {
             // Extract the county FIPS code from the GeoJSON
             const countyId = feature.id;
-            
+
             // Get the case count using the county FIPS code
             const caseCount = caseData[countyId] || 0;
-            
+
             // Get the color and opacity based on case count
             let fillColor = '#ffffff'; // Default to white
-            let fillOpacity = 0.05;    // Default low opacity for counties with no data
-            
+            let fillOpacity = 0.2;     // Slightly higher minimum opacity for better visibility
+
             if (caseCount > 0) {
-                // Get color from our custom scale for counties with cases
+                // Use min-max scaling for better color distribution
                 fillColor = colorScale(caseCount);
-                
-                // Create a scale that shows distinctions better even with large ranges
-                const powerScale = d3Scale.scalePow()
-                    .exponent(0.3)  // Lower exponent gives more visual distinction to lower values
-                    .domain([1, Math.max(maxCount, 10)])
-                    .range([0.4, 0.95]);  // Slightly reduced opacity range for better visibility
-                    
-                fillOpacity = powerScale(Math.max(1, caseCount));
+
+                // High contrast opacity scale
+                const opacityScale = d3Scale.scaleLinear()
+                    .domain([minCount, maxCount])
+                    .range([0.5, 0.95]);  // Higher minimum opacity for better visibility
+
+                fillOpacity = opacityScale(caseCount);
             }
-            
+
             return {
-                fillColor: fillColor,       // Use the color we calculated above
-                weight: 0.5,                // Thinner borders like in the example
-                opacity: 0.5,               // Semi-transparent borders
-                color: '#a9c6e5',           // Lighter blue for borders like in example
+                fillColor: fillColor,
+                weight: 0.8,                // Slightly thicker borders for better definition
+                opacity: 0.7,               // More visible borders
+                color: '#e34a33',           // Softer red for borders
                 fillOpacity: fillOpacity,
                 className: 'county-polygon',
-                zIndex: 100                 // Ensure county polygons are below the heat map
+                zIndex: 100
             };
         };
 
@@ -200,60 +159,53 @@ function CountyCaseHeatMap({ enabled = true }) {
         geojsonLayerRef.current = L.geoJSON(countyData, {
             style: style,
             onEachFeature: (feature, layer) => {
-                // Extract county name and state from properties
+                // Extract county name from properties
                 const countyName = feature.properties.NAME;
-                const stateName = feature.properties.STATE_NAME;
                 const countyId = feature.id;
                 const caseCount = caseData[countyId] || 0;
-                
+
                 // Format case count with commas
                 const formattedCount = caseCount.toLocaleString();
-                
-                // Create tooltip with county info and case count
+
+                // Create tooltip with only county info and case count
                 layer.bindTooltip(`
-                    <div style="font-weight:600; margin-bottom:4px;">${countyName}, ${stateName}</div>
+                    <div style="font-weight:600; margin-bottom:4px;">${countyName}</div>
                     <div style="display:flex; align-items:center;">
                         <span style="color:#3182bd; font-weight:bold; margin-right:5px;">${formattedCount}</span>
-                        <span>open cases</span>
+                        <span style="color:#800000;">open cases</span>
                     </div>
-                `, { 
+                `, {
                     sticky: true,
                     offset: [0, -5],
                     direction: 'top',
                     className: 'county-tooltip'
                 });
-                
-                // Add event listeners for hover highlighting and click
+
+                // Add event listeners for hover highlighting (no click)
                 layer.on({
-                    mouseover: function(e) {
+                    mouseover: function (e) {
                         const l = e.target;
                         l.setStyle({
-                            weight: 2,
-                            color: '#4a89dc',
-                            fillOpacity: 0.85,
+                            weight: 2.5,
+                            color: '#1a4a8a',
+                            fillOpacity: 0.95,
                             dashArray: ''
                         });
-                        
+
                         if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
                             l.bringToFront();
                         }
-                        
+
                         // Open the tooltip on hover
                         layer.openTooltip();
                     },
-                    mouseout: function(e) {
+                    mouseout: function (e) {
                         geojsonLayerRef.current.resetStyle(e.target);
-                        
+
                         // Close the tooltip on mouseout
                         setTimeout(() => layer.closeTooltip(), 300);
-                    },
-                    click: function(e) {
-                        // Zoom to the county on click
-                        map.fitBounds(e.target.getBounds(), {
-                            padding: [50, 50],
-                            maxZoom: 10
-                        });
                     }
+                    // No click event
                 });
             }
         });
@@ -265,42 +217,21 @@ function CountyCaseHeatMap({ enabled = true }) {
                 map.createPane('countyPane');
                 map.getPane('countyPane').style.zIndex = 200; // Lower value to ensure it's below the heat map layer
             }
-            
+
             geojsonLayerRef.current.options.pane = 'countyPane';
             geojsonLayerRef.current.addTo(map);
-            
-            // Add legend to the map if it doesn't exist yet
-            if (!legendRef.current) {
-                legendRef.current = createLegend(minCount, maxCount);
-                legendRef.current.addTo(map);
-            }
         } else {
             // Remove the layer if not enabled
             if (geojsonLayerRef.current) {
                 map.removeLayer(geojsonLayerRef.current);
             }
-            
-            // Remove legend if disabled
-            if (legendRef.current) {
-                legendRef.current.remove();
-                legendRef.current = null;
-            }
         }
-        
+
         return () => {
             if (geojsonLayerRef.current) {
                 map.removeLayer(geojsonLayerRef.current);
             }
-            
-            if (legendRef.current) {
-                legendRef.current.remove();
-                legendRef.current = null;
-            }
         };
-
-        // Add the legend control to the map
-        const legend = createLegend(minCount, maxCount);
-        legend.addTo(map);
 
     }, [map, countyData, caseData, enabled]);
 
