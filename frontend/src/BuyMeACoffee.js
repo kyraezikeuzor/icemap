@@ -11,6 +11,7 @@ function BuyMeACoffee({ isMobile }) {
         <div className={`buy-me-coffee ${isMobile ? 'mobile' : ''}`}>
             <button
                 className="coffee-button"
+                style={{ minWidth: 200 }}
                 onClick={handleClick}
                 title="Support this project with a coffee!"
             >

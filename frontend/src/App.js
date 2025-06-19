@@ -129,8 +129,8 @@ function App() {
 
     return (
         <div className="App">
-            <ContactInfo />
             <InfoModal isOpen={showModal} onClose={closeModal} />
+            <ContactInfo />
             <BuyMeACoffee isMobile={isMobile} />
             <UnifiedPanel
                 cursorPosition={cursorPosition}
