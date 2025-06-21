@@ -281,8 +281,8 @@
 /* Responsive design */
 @media (max-width: 768px) {
     .inspection-modal {
-        max-width: 95vw;
-        max-height: 95vh;
+        max-width: 90vw;
+        max-height: 66.5vh;
     }
 
     .inspection-modal .modal-content {
