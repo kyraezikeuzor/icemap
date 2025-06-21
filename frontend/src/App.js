@@ -64,13 +64,17 @@ function parseJSONL(text) {
 function App() {
     const [arrestData, setArrestData] = useState([]);
     const [inspectionData, setInspectionData] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false); // Changed to false to show map immediately
     const [showModal, setShowModal] = useState(true);
     const [showInspectionModal, setShowInspectionModal] = useState(false);
     const [selectedInspection, setSelectedInspection] = useState(null);
     const [cursorPosition, setCursorPosition] = useState(null);
     const [mapClickCount, setMapClickCount] = useState(0);
     const [isMobile, setIsMobile] = useState(false);
+    const [dataLoadingStatus, setDataLoadingStatus] = useState({
+        arrestData: false,
+        inspectionData: false
+    });
 
     // Detect mobile device on mount and window resize
     useEffect(() => {
@@ -89,10 +93,11 @@ function App() {
         };
     }, []);
 
+    // Load arrest data asynchronously
     useEffect(() => {
-        const loadData = async () => {
+        const loadArrestData = async () => {
+            setDataLoadingStatus(prev => ({ ...prev, arrestData: true }));
             try {
-                // Load arrest data
                 const arrestResponse = await fetch('/arrests_with_titles.csv');
                 const arrestCsvText = await arrestResponse.text();
 
@@ -117,8 +122,21 @@ function App() {
                 );
 
                 setArrestData(arrestData);
+            } catch (error) {
+                console.error('Error loading arrest data:', error);
+            } finally {
+                setDataLoadingStatus(prev => ({ ...prev, arrestData: false }));
+            }
+        };
 
-                // Load inspection data from new source and filter for high similarity scores
+        loadArrestData();
+    }, []);
+
+    // Load inspection data asynchronously
+    useEffect(() => {
+        const loadInspectionData = async () => {
+            setDataLoadingStatus(prev => ({ ...prev, inspectionData: true }));
+            try {
                 const inspectionResponse = await fetch('/facilities_with_coordinates_results.jsonl');
                 const inspectionText = await inspectionResponse.text();
                 const allInspectionData = parseJSONL(inspectionText);
@@ -133,15 +151,14 @@ function App() {
                 );
 
                 setInspectionData(filteredInspectionData);
-
             } catch (error) {
-                console.error('Error loading data:', error);
+                console.error('Error loading inspection data:', error);
             } finally {
-                setLoading(false);
+                setDataLoadingStatus(prev => ({ ...prev, inspectionData: false }));
             }
         };
 
-        loadData();
+        loadInspectionData();
     }, []);
 
     const closeModal = () => {
@@ -166,7 +183,10 @@ function App() {
         setSelectedInspection(null);
     };
 
-    if (loading) {
+    // Show loading indicator only if both datasets are still loading
+    const isLoading = dataLoadingStatus.arrestData && dataLoadingStatus.inspectionData;
+
+    if (isLoading) {
         return (
             <div className="loading">
                 <h2>Loading data...</h2>

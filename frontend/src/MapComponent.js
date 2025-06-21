@@ -167,6 +167,7 @@ function CursorTracker({ onCursorMove, onMapClick }) {
 function ZoomBasedInspectionPins({ inspectionData, onPinClick, enabled }) {
     const map = useMap();
     const [showPins, setShowPins] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
         const handleZoomEnd = () => {
@@ -184,12 +185,42 @@ function ZoomBasedInspectionPins({ inspectionData, onPinClick, enabled }) {
         };
     }, [map]);
 
+    // Show loading indicator if data is being loaded and pins should be visible
+    useEffect(() => {
+        if (showPins && enabled && (!inspectionData || inspectionData.length === 0)) {
+            setIsLoading(true);
+        } else {
+            setIsLoading(false);
+        }
+    }, [showPins, enabled, inspectionData]);
+
     return (
-        <InspectionPins
-            inspectionData={inspectionData}
-            onPinClick={onPinClick}
-            enabled={showPins && enabled}
-        />
+        <>
+            <InspectionPins
+                inspectionData={inspectionData}
+                onPinClick={onPinClick}
+                enabled={showPins && enabled}
+            />
+            {isLoading && (
+                <div
+                    style={{
+                        position: 'absolute',
+                        top: '50%',
+                        left: '50%',
+                        transform: 'translate(-50%, -50%)',
+                        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                        color: 'white',
+                        padding: '10px 20px',
+                        borderRadius: '5px',
+                        fontSize: '14px',
+                        zIndex: 1000,
+                        pointerEvents: 'none'
+                    }}
+                >
+                    Loading detention center data...
+                </div>
+            )}
+        </>
     );
 }
 
@@ -210,7 +241,7 @@ function MapComponent({ arrestData, inspectionData, onCursorMove, onMapClick, on
                 icemap.dev
             </div>
             <div className="map-controls">
-                <div className="checkbox-container">
+                <div className={`checkbox-container ${showDetentionPins ? 'checked' : ''}`}>
                     <div
                         className={`checkbox ${showDetentionPins ? 'checked' : ''}`}
                         onClick={() => setShowDetentionPins(!showDetentionPins)}
