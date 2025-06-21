@@ -101,4 +101,4 @@ flowchart TD
 
 - AppSync + GraphQL or API Gateway + REST/JSON
 - React Query for information caching
--
+- etc
