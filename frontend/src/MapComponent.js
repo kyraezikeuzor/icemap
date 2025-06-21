@@ -4,6 +4,7 @@ import L from 'leaflet';
 import './Branding.css';
 import CountyCaseHeatMap from './components/CountyCaseHeatMap';
 import InspectionPins from './components/InspectionPins';
+import CityMarkers from './components/CityMarkers';
 import './components/HeatMapLayer.css';
 
 // Fix for default markers in react-leaflet
@@ -32,7 +33,7 @@ try {
             // Create a special pane for heat if it doesn't exist
             if (!map.getPane('heatPane')) {
                 map.createPane('heatPane');
-                map.getPane('heatPane').style.zIndex = 650; // Much higher z-index to ensure it's on top
+                map.getPane('heatPane').style.zIndex = 400; // Lower than city markers (450) and detention centers (650)
             }
 
             // Save the original container and pane
@@ -262,7 +263,7 @@ function MapComponent({ arrestData, inspectionData, onCursorMove, onMapClick, on
                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                     url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
                 />
-                {/* Change the rendering order - first county layer, then heat map layer on top */}
+                {/* Change the rendering order - first county layer, then heat map layer, then city markers on top */}
                 <CountyCaseHeatMap enabled={true} />
                 <HeatMapLayer arrestData={arrestData} enabled={true} />
                 <ZoomBasedInspectionPins
@@ -270,6 +271,7 @@ function MapComponent({ arrestData, inspectionData, onCursorMove, onMapClick, on
                     onPinClick={onInspectionPinClick}
                     enabled={showDetentionPins}
                 />
+                <CityMarkers enabled={true} />
                 {(onCursorMove || onMapClick) && <CursorTracker onCursorMove={onCursorMove} onMapClick={onMapClick} />}
             </MapContainer>
         </div>
