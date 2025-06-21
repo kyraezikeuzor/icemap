@@ -277,7 +277,7 @@ function MapComponent({ arrestData, inspectionData, onCursorMove, onMapClick, on
                     onPinClick={onInspectionPinClick}
                     enabled={showDetentionPins}
                 />
-                <CityMarkers enabled={true} />
+                {/* <CityMarkers enabled={true} /> */}
                 {(onCursorMove || onMapClick) && <CursorTracker onCursorMove={onCursorMove} onMapClick={onMapClick} />}
             </MapContainer>
         </div>
