@@ -242,8 +242,8 @@ def process_articles(input_file: str, output_file: str, start_from: int = 0):
 
 def main():
     import sys
-    input_file = "data/mediacloud_articles.csv"
-    output_file = "data/articles_with_locations2.csv"
+    input_file = "data/mediacloud_report.csv"
+    output_file = "data/mediacloud_report_processed.csv"
     start_from = 0
     args = sys.argv[1:]
     if args and args[0] in ('-h', '--help'):

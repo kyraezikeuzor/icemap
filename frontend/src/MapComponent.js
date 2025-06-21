@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { MapContainer, TileLayer, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import './Branding.css';
@@ -116,7 +116,7 @@ function HeatMapLayer({ arrestData, enabled = true }) {
                 map.removeLayer(heatLayerRef.current);
             }
         };
-    }, [arrestData, map, enabled]);
+    }, [arrestData, enabled]); // Remove map dependency
 
     return null;
 }
@@ -125,40 +125,45 @@ function HeatMapLayer({ arrestData, enabled = true }) {
 function CursorTracker({ onCursorMove, onMapClick }) {
     const map = useMap();
 
+    // Memoize event handlers to prevent recreation
+    const handleMouseMove = useCallback((e) => {
+        // Convert screen coordinates to lat/lng
+        const latlng = map.containerPointToLatLng([e.originalEvent.clientX, e.originalEvent.clientY]);
+        onCursorMove({
+            lat: latlng.lat,
+            lng: latlng.lng,
+            zoom: map.getZoom()
+        });
+    }, [map, onCursorMove]);
+
+    const handleMouseLeave = useCallback(() => {
+        // Clear cursor position when mouse leaves map
+        onCursorMove(null);
+    }, [onCursorMove]);
+
+    const handleMapClick = useCallback(() => {
+        if (onMapClick) {
+            onMapClick();
+        }
+    }, [onMapClick]);
+
     useEffect(() => {
-        const handleMouseMove = (e) => {
-            // Convert screen coordinates to lat/lng
-            const latlng = map.containerPointToLatLng([e.originalEvent.clientX, e.originalEvent.clientY]);
-            onCursorMove({
-                lat: latlng.lat,
-                lng: latlng.lng,
-                zoom: map.getZoom()
-            });
-        };
-
-        const handleMouseLeave = () => {
-            // Clear cursor position when mouse leaves map
-            onCursorMove(null);
-        };
-
         map.on('mousemove', handleMouseMove);
         map.on('mouseout', handleMouseLeave);
 
         // Priority: always fire onMapClick on map click
-        let clickHandler;
         if (onMapClick) {
-            clickHandler = () => onMapClick();
-            map.on('click', clickHandler);
+            map.on('click', handleMapClick);
         }
 
         return () => {
             map.off('mousemove', handleMouseMove);
             map.off('mouseout', handleMouseLeave);
-            if (onMapClick && clickHandler) {
-                map.off('click', clickHandler);
+            if (onMapClick) {
+                map.off('click', handleMapClick);
             }
         };
-    }, [map, onCursorMove, onMapClick]);
+    }, [map, handleMouseMove, handleMouseLeave, handleMapClick, onMapClick]);
 
     return null;
 }
@@ -169,12 +174,13 @@ function ZoomBasedInspectionPins({ inspectionData, onPinClick, enabled }) {
     const [showPins, setShowPins] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
-    useEffect(() => {
-        const handleZoomEnd = () => {
-            const zoom = map.getZoom();
-            setShowPins(zoom >= 4);
-        };
+    // Memoize the zoom handler to prevent recreation
+    const handleZoomEnd = useCallback(() => {
+        const zoom = map.getZoom();
+        setShowPins(zoom >= 4);
+    }, [map]);
 
+    useEffect(() => {
         // Set initial state
         handleZoomEnd();
 
@@ -183,7 +189,7 @@ function ZoomBasedInspectionPins({ inspectionData, onPinClick, enabled }) {
         return () => {
             map.off('zoomend', handleZoomEnd);
         };
-    }, [map]);
+    }, [handleZoomEnd]); // Remove map dependency
 
     // Show loading indicator if data is being loaded and pins should be visible
     useEffect(() => {

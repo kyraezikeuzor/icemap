@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import { GeoJSON, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import * as d3Scale from 'd3-scale';
@@ -12,6 +12,156 @@ function CountyCaseHeatMap({ enabled = true }) {
     const [countyData, setCountyData] = useState(null);
     const [caseData, setCaseData] = useState({});
     const geojsonLayerRef = useRef(null);
+
+    // Memoize the color scale to prevent recreation on every render
+    const colorScale = useMemo(() => {
+        if (!Object.keys(caseData).length) return null;
+
+        const caseCounts = Object.values(caseData).map(data => data.totalCases).filter(count => count > 0);
+        const minCount = Math.min(...caseCounts) || 0;
+        const maxCount = Math.max(...caseCounts) || 1;
+
+        // Create a custom color scale that is overall redder and starts at a darker baseline
+        const customInterpolator = t => {
+            // t is normalized [0,1] value
+            // For the lowest 40%, blend from #fc9272 (light red) to #de2d26 (dark red)
+            if (t < 0.4) {
+                return interpolateRgb("#fc9272", "#de2d26")(t / 0.4);
+            }
+            // For the rest, blend from #de2d26 (dark red) to #800026 (very dark red)
+            return interpolateRgb("#de2d26", "#800026")((t - 0.4) / 0.6);
+        };
+
+        return d3Scale.scaleSequential()
+            .domain([minCount, maxCount])
+            .interpolator(customInterpolator);
+    }, [caseData]);
+
+    // Memoize the opacity scale
+    const opacityScale = useMemo(() => {
+        if (!Object.keys(caseData).length) return null;
+
+        const caseCounts = Object.values(caseData).map(data => data.totalCases).filter(count => count > 0);
+        const minCount = Math.min(...caseCounts) || 0;
+        const maxCount = Math.max(...caseCounts) || 1;
+
+        return d3Scale.scaleLinear()
+            .domain([minCount, maxCount])
+            .range([0.5, 0.95]);
+    }, [caseData]);
+
+    // Memoize the style function to prevent recreation on every render
+    const styleFunction = useCallback((feature) => {
+        if (!colorScale || !opacityScale) {
+            return {
+                fillColor: '#ffffff',
+                weight: 0.8,
+                opacity: 1,
+                color: '#e34a33',
+                fillOpacity: 0.2,
+                className: 'county-polygon',
+                zIndex: 100
+            };
+        }
+
+        const countyId = feature.id;
+        const countyData = caseData[countyId] || { totalCases: 0, cases90Days: 0 };
+        const caseCount = countyData.totalCases;
+        let fillColor = '#ffffff';
+        let fillOpacity = 0.2;
+        let borderColor = '#e34a33';
+        let borderWeight = 0.8;
+        let zIndex = 100;
+
+        if (caseCount > 0) {
+            fillColor = colorScale(caseCount);
+            fillOpacity = opacityScale(caseCount);
+        }
+
+        return {
+            fillColor: fillColor,
+            weight: borderWeight,
+            opacity: 1,
+            color: borderColor,
+            fillOpacity: fillOpacity,
+            className: 'county-polygon',
+            zIndex: zIndex
+        };
+    }, [colorScale, opacityScale, caseData]);
+
+    // Memoize the onEachFeature function
+    const onEachFeatureFunction = useCallback((feature, layer) => {
+        // Extract county name from properties
+        const countyName = feature.properties.NAME;
+        const countyId = feature.id;
+        const countyData = caseData[countyId] || { totalCases: 0, cases90Days: 0 };
+        const caseCount = countyData.totalCases;
+        const caseCount90Days = countyData.cases90Days;
+
+        // Format case counts with commas
+        const formattedCount = caseCount.toLocaleString();
+        const formattedCount90Days = caseCount90Days.toLocaleString();
+
+        // Create tooltip with county info, total open cases, and cases in past 90 days
+        layer.bindTooltip(`
+            <div style="font-weight:600; margin-bottom:4px;">${countyName}</div>
+            <div style="display:flex; align-items:center; margin-bottom:3px;">
+                <span style="color:#3182bd; font-weight:bold; margin-right:5px;">${formattedCount}</span>
+                <span style="color:#800000;">open cases</span>
+            </div>
+            <div style="display:flex; align-items:center;">
+                <span style="color:#3182bd; font-weight:bold; margin-right:5px;">${formattedCount90Days}</span>
+                <span style="color:#800000;">cases opened in past 90 days</span>
+            </div>
+        `, {
+            sticky: true,
+            offset: [0, -5],
+            direction: 'top',
+            className: 'county-tooltip'
+        });
+
+        // Add event listeners for hover highlighting only (no click functionality)
+        layer.on({
+            mouseover: function (e) {
+                const l = e.target;
+                l.setStyle({
+                    weight: 2.5,
+                    color: '#1a4a8a',
+                    fillOpacity: 0.95,
+                    dashArray: ''
+                });
+
+                if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
+                    l.bringToFront();
+                }
+
+                // Open the tooltip on hover
+                layer.openTooltip();
+            },
+            mouseout: function (e) {
+                geojsonLayerRef.current.resetStyle(e.target);
+
+                // Close the tooltip on mouseout
+                setTimeout(() => layer.closeTooltip(), 300);
+            },
+            click: function (e) {
+                // Completely prevent any click functionality
+                if (e.originalEvent) {
+                    e.originalEvent.preventDefault();
+                    e.originalEvent.stopPropagation();
+                }
+                return false; // Prevent further event propagation
+            },
+            mousedown: function (e) {
+                // Prevent default Leaflet highlighting
+                if (e.originalEvent) {
+                    e.originalEvent.preventDefault();
+                    e.originalEvent.stopPropagation();
+                }
+                return false; // Prevent further event propagation
+            }
+        });
+    }, [caseData]);
 
     useEffect(() => {
         // Load the US counties GeoJSON
@@ -97,7 +247,7 @@ function CountyCaseHeatMap({ enabled = true }) {
                 map.removeLayer(geojsonLayerRef.current);
             }
         };
-    }, [map]);
+    }, []); // Remove map dependency to prevent recreation on zoom
 
     useEffect(() => {
         if (!countyData || !Object.keys(caseData).length || !enabled) {
@@ -109,131 +259,11 @@ function CountyCaseHeatMap({ enabled = true }) {
             map.removeLayer(geojsonLayerRef.current);
         }
 
-        // Find min and max case counts for color scale
-        const caseCounts = Object.values(caseData).map(data => data.totalCases).filter(count => count > 0);
-        const minCount = Math.min(...caseCounts) || 0;
-        const maxCount = Math.max(...caseCounts) || 1;
-
-        // Create a custom color scale that is overall redder and starts at a darker baseline
-        const customInterpolator = t => {
-            // t is normalized [0,1] value
-            // For the lowest 40%, blend from #fc9272 (light red) to #de2d26 (dark red)
-            if (t < 0.4) {
-                return interpolateRgb("#fc9272", "#de2d26")(t / 0.4);
-            }
-            // For the rest, blend from #de2d26 (dark red) to #800026 (very dark red)
-            return interpolateRgb("#de2d26", "#800026")((t - 0.4) / 0.6);
-        };
-        const colorScale = d3Scale.scaleSequential()
-            .domain([minCount, maxCount])
-            .interpolator(customInterpolator);
-
-        // Style function for the GeoJSON
-        const style = (feature) => {
-            const countyId = feature.id;
-            const countyData = caseData[countyId] || { totalCases: 0, cases90Days: 0 };
-            const caseCount = countyData.totalCases;
-            let fillColor = '#ffffff';
-            let fillOpacity = 0.2;
-            let borderColor = '#e34a33';
-            let borderWeight = 0.8;
-            let zIndex = 100;
-
-            if (caseCount > 0) {
-                fillColor = colorScale(caseCount);
-                const opacityScale = d3Scale.scaleLinear()
-                    .domain([minCount, maxCount])
-                    .range([0.5, 0.95]);
-                fillOpacity = opacityScale(caseCount);
-            }
-
-            return {
-                fillColor: fillColor,
-                weight: borderWeight,
-                opacity: 1,
-                color: borderColor,
-                fillOpacity: fillOpacity,
-                className: 'county-polygon',
-                zIndex: zIndex
-            };
-        };
-
         // Create GeoJSON layer
         geojsonLayerRef.current = L.geoJSON(countyData, {
-            style: style,
+            style: styleFunction,
             interactive: true, // Re-enable interactions for hover events
-            onEachFeature: (feature, layer) => {
-                // Extract county name from properties
-                const countyName = feature.properties.NAME;
-                const countyId = feature.id;
-                const countyData = caseData[countyId] || { totalCases: 0, cases90Days: 0 };
-                const caseCount = countyData.totalCases;
-                const caseCount90Days = countyData.cases90Days;
-
-                // Format case counts with commas
-                const formattedCount = caseCount.toLocaleString();
-                const formattedCount90Days = caseCount90Days.toLocaleString();
-
-                // Create tooltip with county info, total open cases, and cases in past 90 days
-                layer.bindTooltip(`
-                    <div style="font-weight:600; margin-bottom:4px;">${countyName}</div>
-                    <div style="display:flex; align-items:center; margin-bottom:3px;">
-                        <span style="color:#3182bd; font-weight:bold; margin-right:5px;">${formattedCount}</span>
-                        <span style="color:#800000;">open cases</span>
-                    </div>
-                    <div style="display:flex; align-items:center;">
-                        <span style="color:#3182bd; font-weight:bold; margin-right:5px;">${formattedCount90Days}</span>
-                        <span style="color:#800000;">cases opened in past 90 days</span>
-                    </div>
-                `, {
-                    sticky: true,
-                    offset: [0, -5],
-                    direction: 'top',
-                    className: 'county-tooltip'
-                });
-
-                // Add event listeners for hover highlighting only (no click functionality)
-                layer.on({
-                    mouseover: function (e) {
-                        const l = e.target;
-                        l.setStyle({
-                            weight: 2.5,
-                            color: '#1a4a8a',
-                            fillOpacity: 0.95,
-                            dashArray: ''
-                        });
-
-                        if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
-                            l.bringToFront();
-                        }
-
-                        // Open the tooltip on hover
-                        layer.openTooltip();
-                    },
-                    mouseout: function (e) {
-                        geojsonLayerRef.current.resetStyle(e.target);
-
-                        // Close the tooltip on mouseout
-                        setTimeout(() => layer.closeTooltip(), 300);
-                    },
-                    click: function (e) {
-                        // Completely prevent any click functionality
-                        if (e.originalEvent) {
-                            e.originalEvent.preventDefault();
-                            e.originalEvent.stopPropagation();
-                        }
-                        return false; // Prevent further event propagation
-                    },
-                    mousedown: function (e) {
-                        // Prevent default Leaflet highlighting
-                        if (e.originalEvent) {
-                            e.originalEvent.preventDefault();
-                            e.originalEvent.stopPropagation();
-                        }
-                        return false; // Prevent further event propagation
-                    }
-                });
-            }
+            onEachFeature: onEachFeatureFunction
         });
 
         // Add the layer to the map
@@ -259,7 +289,7 @@ function CountyCaseHeatMap({ enabled = true }) {
             }
         };
 
-    }, [map, countyData, caseData, enabled]);
+    }, [countyData, caseData, enabled, styleFunction, onEachFeatureFunction]); // Remove map dependency
 
     return null;
 }

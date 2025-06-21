@@ -1,5 +1,5 @@
 .county-polygon {
-    transition: all 0.15s ease;
+    /* Removed transition to prevent pulsing effect on zoom */
 }
 
 .county-polygon:hover {
@@ -7,6 +7,8 @@
     stroke-width: 1px !important;
     stroke: #800000 !important;
     cursor: pointer;
+    /* Add transition only for hover effects */
+    transition: fill-opacity 0.15s ease, stroke-width 0.15s ease, stroke 0.15s ease;
 }
 
 /* Style for the county tooltip */
