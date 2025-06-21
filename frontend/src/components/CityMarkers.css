@@ -1,0 +1,143 @@
+.city-marker {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 14px;
+    height: 14px;
+    background-color: rgba(45, 0, 0, 0.9); /* Dark red/black hybrid */
+    border: 1px solid rgba(255, 255, 255, 0.9);
+    border-radius: 50%;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    cursor: pointer;
+    font-size: 9px;
+    color: #ffffff;
+    font-weight: bold;
+    font-family: 'Times New Roman', serif;
+}
+
+.city-marker-container {
+    background: none !important; /* Override Leaflet's background */
+}
+
+.city-tooltip {
+    background-color: rgba(0, 0, 0, 0.8);
+    border: 1px solid #2d0000; /* Updated to match dark red/black hybrid color */
+    border-radius: 4px;
+    color: white;
+    padding: 6px 10px;
+    font-size: 12px;
+    line-height: 1.4;
+    text-align: center;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+}
+
+/* City Summary Popup Styles */
+.city-summary-popup-container {
+    padding: 0 !important; /* Remove default Leaflet popup padding */
+    z-index: 1000 !important; /* Ensure popups are above all other map elements */
+}
+
+/* Override Leaflet's popup z-index */
+.leaflet-popup {
+    z-index: 1000 !important; 
+}
+
+.leaflet-popup-content-wrapper,
+.leaflet-popup-tip {
+    z-index: 1000 !important;
+}
+
+/* Override default leaflet pane z-indices */
+.leaflet-pane {
+    z-index: 400;
+}
+
+.leaflet-popup-pane {
+    z-index: 1000 !important;
+}
+
+.leaflet-tooltip-pane {
+    z-index: 700 !important;
+}
+
+.city-summary-popup {
+    background-color: rgba(0, 0, 0, 0.9);
+    color: white;
+    border-radius: 6px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.6);
+    padding: 15px;
+    width: 350px;
+    max-width: 90vw;
+    max-height: 400px;
+    overflow-y: auto;
+    border: 2px solid #2d0000; /* Updated to match dark red/black hybrid color */
+    position: relative;
+    font-family: 'Roboto', Arial, sans-serif;
+    z-index: 1000 !important; /* Ensure it's above everything */
+}
+
+.city-summary-footer {
+    font-size: 10px;
+    color: #888888;
+    margin-top: 12px;
+    text-align: right;
+    border-top: 1px solid rgba(66, 135, 245, 0.3);
+    padding-top: 5px;
+}
+
+.city-summary-title {
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 15px;
+    color: #8b0000; /* Slightly brighter red for better readability in titles */
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(45, 0, 0, 0.4);
+}
+
+.city-summary-content {
+    font-size: 14px;
+    line-height: 1.6;
+    color: #e0e0e0;
+}
+
+.city-summary-close {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 24px;
+    height: 24px;
+    background: none;
+    border: none;
+    color: #a0a0a0;
+    font-size: 24px;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+
+.city-summary-close:hover {
+    color: white;
+}
+
+.loading-spinner {
+    width: 20px;
+    height: 20px;
+    margin: 10px auto;
+    border: 3px solid rgba(45, 0, 0, 0.3);
+    border-radius: 50%;
+    border-top-color: #8b0000;
+    animation: spin 1s linear infinite;
+}
+
+.error-message {
+    color: #ff6b6b;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}

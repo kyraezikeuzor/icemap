@@ -90,6 +90,12 @@ function InspectionPins({ inspectionData, onPinClick, enabled = true }) {
     const markersRef = useRef([]);
 
     useEffect(() => {
+        // Create a pane for inspection pins if it doesn't exist yet
+        if (!map.getPane('detentionCenterPane')) {
+            map.createPane('detentionCenterPane');
+            map.getPane('detentionCenterPane').style.zIndex = 650; // Higher than city markers (450) but lower than popups (1000)
+        }
+        
         if (!enabled || !inspectionData || inspectionData.length === 0) {
             // Clear existing markers
             markersRef.current.forEach(marker => {
@@ -119,7 +125,10 @@ function InspectionPins({ inspectionData, onPinClick, enabled = true }) {
             const summaryScore = parseInt(inspection.summary_score) || 0;
             const icon = createInspectionIcon(summaryScore);
 
-            const marker = L.marker([lat, lng], { icon });
+            const marker = L.marker([lat, lng], { 
+                icon,
+                pane: 'detentionCenterPane'
+            });
 
             // Create tooltip for hover
             const tooltip = L.tooltip({
@@ -177,4 +186,4 @@ function InspectionPins({ inspectionData, onPinClick, enabled = true }) {
     return null;
 }
 
-export default InspectionPins; 
+export default InspectionPins;
