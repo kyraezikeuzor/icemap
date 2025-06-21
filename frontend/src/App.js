@@ -5,6 +5,7 @@ import InspectionModal from './InspectionModal';
 import UnifiedPanel from './UnifiedPanel';
 import BuyMeACoffee from './BuyMeACoffee';
 import ContactInfo from './components/ContactInfo';
+import pako from 'pako';
 import './App.css';
 
 // Helper function to detect mobile devices
@@ -137,9 +138,15 @@ function App() {
         const loadInspectionData = async () => {
             setDataLoadingStatus(prev => ({ ...prev, inspectionData: true }));
             try {
-                const inspectionResponse = await fetch('/facilities_with_coordinates_results.jsonl');
-                const inspectionText = await inspectionResponse.text();
-                const allInspectionData = parseJSONL(inspectionText);
+                const inspectionResponse = await fetch('/facilities_with_coordinates_results.jsonl.gz');
+
+                if (!inspectionResponse.ok) {
+                    throw new Error(`HTTP error! status: ${inspectionResponse.status}`);
+                }
+
+                const compressedData = await inspectionResponse.arrayBuffer();
+                const decompressedData = pako.inflate(compressedData, { to: 'string' });
+                const allInspectionData = parseJSONL(decompressedData);
 
                 // Filter for entries with name_similarity_score > 0.9
                 const filteredInspectionData = allInspectionData.filter(facility =>
