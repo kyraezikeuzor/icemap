@@ -1,0 +1,29 @@
+/* Inspection Pins Styling */
+.inspection-pin {
+    background: transparent !important;
+    border: none !important;
+}
+
+.inspection-pin div {
+    transition: transform 0.2s ease-in-out;
+}
+
+.inspection-pin:hover div {
+    transform: scale(1.1);
+}
+
+/* Tooltip styling */
+.inspection-tooltip {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+.inspection-tooltip::before {
+    display: none !important;
+}
+
+/* Ensure pins are above other map elements */
+.leaflet-marker-icon.inspection-pin {
+    z-index: 1000 !important;
+}

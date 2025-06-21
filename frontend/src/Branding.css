@@ -8,7 +8,7 @@
     font-family: 'Inconsolata', monospace;
     font-size: 24px;
     font-weight: 300;
-    padding: 15px 25px;
+    padding: 20px 30px;
     background: rgba(0, 0, 0, 0.6);
     border-radius: 8px;
     backdrop-filter: blur(10px);
@@ -23,6 +23,68 @@
     transform: translateX(-50%) scale(1.05);
 }
 
+/* Map controls styling */
+.map-controls {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    z-index: 1000;
+}
+
+.checkbox-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(0, 0, 0, 0.6);
+    padding: 12px 16px;
+    border-radius: 8px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease;
+}
+
+.checkbox-container:hover {
+    background: rgba(0, 0, 0, 0.7);
+    border-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 25px rgba(0, 0, 0, 0.4);
+}
+
+.checkbox {
+    width: 20px;
+    height: 20px;
+    border: 2px solid #fff;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    background: transparent;
+}
+
+.checkbox.checked {
+    background: #ff6600;
+    border-color: #ff6600;
+}
+
+.checkmark {
+    color: white;
+    font-size: 14px;
+    font-weight: bold;
+    line-height: 1;
+}
+
+.checkbox-label {
+    color: #fff;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    user-select: none;
+}
+
 /* Responsive design for branding */
 @media (max-width: 768px) {
     .branding-overlay {
@@ -31,6 +93,35 @@
         top: 55px;
         left: 50%;
         transform: translateX(-50%);
+    }
+
+    .map-controls {
+        position: fixed;
+        bottom: 140px;
+        right: 20px;
+        top: auto;
+    }
+
+    .checkbox-container {
+        padding: 8px 12px;
+        min-width: 180px;
+        height: 44px;
+        justify-content: center;
+        background: linear-gradient(135deg, #444 0%, #333 100%);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    .checkbox-container:hover {
+        background: linear-gradient(135deg, #555 0%, #444 100%);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+        transform: translateY(-2px);
+    }
+
+    .checkbox-label {
+        font-size: 13px;
+        color: white;
+        font-weight: 500;
     }
 }
 
@@ -41,5 +132,34 @@
         top: 55px;
         left: 50%;
         transform: translateX(-50%);
+    }
+
+    .map-controls {
+        position: fixed;
+        bottom: 140px;
+        right: 20px;
+        top: auto;
+    }
+
+    .checkbox-container {
+        padding: 8px 12px;
+        min-width: 180px;
+        height: 44px;
+        justify-content: center;
+        background: linear-gradient(135deg, #444 0%, #333 100%);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    .checkbox-container:hover {
+        background: linear-gradient(135deg, #555 0%, #444 100%);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+        transform: translateY(-2px);
+    }
+
+    .checkbox-label {
+        font-size: 12px;
+        color: white;
+        font-weight: 500;
     }
 }

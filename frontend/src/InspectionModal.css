@@ -1,0 +1,313 @@
+/* Inspection Modal specific styles */
+.inspection-modal {
+    max-width: 700px;
+    max-height: 90vh;
+    background-color: white;
+    border: 1px solid #e0e0e0;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.inspection-modal .modal-content {
+    padding: 40px;
+    padding-top: 50px;
+}
+
+.inspection-modal h1 {
+    font-size: 1.8rem;
+    margin-bottom: 30px;
+    color: #1a1a1a;
+    font-weight: 300;
+    text-align: center;
+    border-bottom: 2px solid #ff6b35;
+    padding-bottom: 15px;
+}
+
+.summary-section {
+    margin-bottom: 30px;
+    padding: 20px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    border-left: 4px solid #ff6b35;
+}
+
+.summary-section h2 {
+    font-size: 1.3rem;
+    color: #1a1a1a;
+    margin-bottom: 15px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.summary-section p {
+    font-size: 1rem;
+    line-height: 1.6;
+    color: #333;
+    margin: 0;
+}
+
+.inspection-details {
+    margin-bottom: 20px;
+}
+
+.inspection-details p {
+    font-size: 1rem;
+    color: #666;
+    margin: 5px 0;
+}
+
+.inspection-header {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 30px;
+}
+
+.inspection-info {
+    display: none;
+    /* Hide the inspection info section */
+}
+
+.inspection-link a {
+    display: inline-block;
+    padding: 12px 24px;
+    background-color: #ff6b35;
+    color: white;
+    text-decoration: none;
+    border-radius: 4px;
+    font-weight: 500;
+    font-size: 0.9rem;
+    transition: background-color 0.2s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.inspection-link a:hover {
+    background-color: #e55a2b;
+}
+
+.inspection-reports-container {
+    margin-top: 30px;
+    margin-bottom: 20px;
+}
+
+.inspection-reports-label {
+    width: 100%;
+    margin-bottom: 15px;
+    font-size: 1.2rem;
+    color: #333;
+    font-weight: 500;
+    text-align: left;
+    border-bottom: 1px solid #e0e0e0;
+    padding-bottom: 10px;
+}
+
+.inspection-reports-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.inspection-reports-table th,
+.inspection-reports-table td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.inspection-reports-table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: #495057;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.inspection-reports-table tbody tr:hover {
+    background-color: #f1f3f5;
+}
+
+.inspection-reports-table td {
+    font-size: 0.95rem;
+}
+
+.inspection-reports-table td a {
+    display: inline-block;
+    padding: 6px 14px;
+    background-color: #ff6b35;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+    font-weight: 500;
+    font-size: 0.85rem;
+    transition: background-color 0.2s ease, transform 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.inspection-reports-table td a:hover {
+    background-color: #e55a2b;
+    text-decoration: none;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+}
+
+.deficiencies-section {
+    margin-bottom: 30px;
+}
+
+.deficiencies-section h2 {
+    font-size: 1.3rem;
+    color: #1a1a1a;
+    margin-bottom: 20px;
+    font-weight: 400;
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.deficiencies-table {
+    overflow-x: auto;
+}
+
+.deficiencies-table table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: white;
+    border: 1px solid #e0e0e0;
+}
+
+.deficiencies-table th {
+    background-color: #f5f5f5;
+    color: #1a1a1a;
+    padding: 15px 20px;
+    text-align: left;
+    font-weight: 500;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid #ff6b35;
+}
+
+.deficiencies-table td {
+    padding: 15px 20px;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 0.9rem;
+}
+
+.deficiencies-table tr:hover {
+    background-color: #fafafa;
+}
+
+.deficiency-count {
+    font-weight: bold;
+    color: #ff6b35;
+}
+
+.conclusion-section {
+    margin-bottom: 30px;
+    padding: 20px;
+    background-color: #fff3e0;
+    border-radius: 8px;
+    border-left: 4px solid #ff9800;
+}
+
+.conclusion-section h2 {
+    font-size: 1.3rem;
+    color: #1a1a1a;
+    margin-bottom: 15px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.conclusion-section p {
+    font-size: 1rem;
+    line-height: 1.6;
+    color: #333;
+    margin: 0;
+}
+
+.deficiency-descriptions {
+    margin-bottom: 30px;
+}
+
+.deficiency-descriptions h2 {
+    font-size: 1.3rem;
+    color: #1a1a1a;
+    margin-bottom: 20px;
+    font-weight: 400;
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.deficiency-description {
+    margin-bottom: 25px;
+    padding: 20px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    border-left: 4px solid #dc3545;
+}
+
+.deficiency-description h3 {
+    font-size: 1.1rem;
+    color: #1a1a1a;
+    margin-bottom: 10px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.deficiency-description p {
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: #333;
+    margin: 0;
+}
+
+.inspection-footer {
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #e0e0e0;
+    text-align: center;
+}
+
+.inspection-footer p {
+    font-size: 0.9rem;
+    color: #666;
+    margin: 0;
+    font-weight: 500;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .inspection-modal {
+        max-width: 95vw;
+        max-height: 95vh;
+    }
+
+    .inspection-modal .modal-content {
+        padding: 20px;
+        padding-top: 50px;
+    }
+
+    .inspection-modal h1 {
+        font-size: 1.1rem;
+        margin-bottom: 20px;
+    }
+
+    .summary-section,
+    .conclusion-section,
+    .deficiency-description {
+        padding: 15px;
+    }
+
+    .summary-section h2,
+    .conclusion-section h2,
+    .deficiency-descriptions h2 {
+        font-size: 1.1rem;
+    }
+
+    .deficiency-description h3 {
+        font-size: 1rem;
+    }
+}

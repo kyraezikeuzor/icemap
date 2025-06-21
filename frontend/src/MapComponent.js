@@ -3,6 +3,7 @@ import { MapContainer, TileLayer, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import './Branding.css';
 import CountyCaseHeatMap from './components/CountyCaseHeatMap';
+import InspectionPins from './components/InspectionPins';
 import './components/HeatMapLayer.css';
 
 // Fix for default markers in react-leaflet
@@ -162,7 +163,39 @@ function CursorTracker({ onCursorMove, onMapClick }) {
     return null;
 }
 
-function MapComponent({ arrestData, onCursorMove, onMapClick }) {
+// Zoom-based inspection pins component
+function ZoomBasedInspectionPins({ inspectionData, onPinClick, enabled }) {
+    const map = useMap();
+    const [showPins, setShowPins] = useState(false);
+
+    useEffect(() => {
+        const handleZoomEnd = () => {
+            const zoom = map.getZoom();
+            setShowPins(zoom >= 4);
+        };
+
+        // Set initial state
+        handleZoomEnd();
+
+        map.on('zoomend', handleZoomEnd);
+
+        return () => {
+            map.off('zoomend', handleZoomEnd);
+        };
+    }, [map]);
+
+    return (
+        <InspectionPins
+            inspectionData={inspectionData}
+            onPinClick={onPinClick}
+            enabled={showPins && enabled}
+        />
+    );
+}
+
+function MapComponent({ arrestData, inspectionData, onCursorMove, onMapClick, onInspectionPinClick }) {
+    const [showDetentionPins, setShowDetentionPins] = useState(true);
+
     // Calculate center of the map based on data
     const center = arrestData.length > 0
         ? [
@@ -175,6 +208,18 @@ function MapComponent({ arrestData, onCursorMove, onMapClick }) {
         <div className="map-container">
             <div className="branding-overlay">
                 icemap.dev
+            </div>
+            <div className="map-controls">
+                <div className="checkbox-container">
+                    <div
+                        className={`checkbox ${showDetentionPins ? 'checked' : ''}`}
+                        onClick={() => setShowDetentionPins(!showDetentionPins)}
+                    >
+                        {showDetentionPins && <div className="checkmark">✓</div>}
+                    </div>
+                    <span className="checkbox-label">Detention Center Pins</span>
+
+                </div>
             </div>
             <MapContainer
                 center={center}
@@ -189,6 +234,11 @@ function MapComponent({ arrestData, onCursorMove, onMapClick }) {
                 {/* Change the rendering order - first county layer, then heat map layer on top */}
                 <CountyCaseHeatMap enabled={true} />
                 <HeatMapLayer arrestData={arrestData} enabled={true} />
+                <ZoomBasedInspectionPins
+                    inspectionData={inspectionData}
+                    onPinClick={onInspectionPinClick}
+                    enabled={showDetentionPins}
+                />
                 {(onCursorMove || onMapClick) && <CursorTracker onCursorMove={onCursorMove} onMapClick={onMapClick} />}
             </MapContainer>
         </div>

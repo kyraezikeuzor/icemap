@@ -11,7 +11,6 @@ function CountyCaseHeatMap({ enabled = true }) {
     const map = useMap();
     const [countyData, setCountyData] = useState(null);
     const [caseData, setCaseData] = useState({});
-    const [selectedCountyId, setSelectedCountyId] = useState(null); // Track selected county
     const geojsonLayerRef = useRef(null);
 
     useEffect(() => {
@@ -71,7 +70,7 @@ function CountyCaseHeatMap({ enabled = true }) {
                     if (caseCount) {
                         caseCount = parseInt(caseCount.replace(/,/g, ''), 10);
                     }
-                    
+
                     if (caseCount90Days) {
                         caseCount90Days = parseInt(caseCount90Days.replace(/,/g, ''), 10);
                     }
@@ -148,14 +147,6 @@ function CountyCaseHeatMap({ enabled = true }) {
                 fillOpacity = opacityScale(caseCount);
             }
 
-            // Highlight selected county
-            if (selectedCountyId && countyId === selectedCountyId) {
-                borderColor = '#800000'; // Maroon
-                borderWeight = 3;
-                fillOpacity = 0.7;
-                zIndex = 500;
-            }
-
             return {
                 fillColor: fillColor,
                 weight: borderWeight,
@@ -170,6 +161,7 @@ function CountyCaseHeatMap({ enabled = true }) {
         // Create GeoJSON layer
         geojsonLayerRef.current = L.geoJSON(countyData, {
             style: style,
+            interactive: true, // Re-enable interactions for hover events
             onEachFeature: (feature, layer) => {
                 // Extract county name from properties
                 const countyName = feature.properties.NAME;
@@ -200,7 +192,7 @@ function CountyCaseHeatMap({ enabled = true }) {
                     className: 'county-tooltip'
                 });
 
-                // Add event listeners for hover highlighting (no click)
+                // Add event listeners for hover highlighting only (no click functionality)
                 layer.on({
                     mouseover: function (e) {
                         const l = e.target;
@@ -225,14 +217,20 @@ function CountyCaseHeatMap({ enabled = true }) {
                         setTimeout(() => layer.closeTooltip(), 300);
                     },
                     click: function (e) {
-                        setSelectedCountyId(countyId); // Set selected county
-                    },
-                    mousedown: function (e) {
-                        // Prevent Leaflet's default highlight (green flash)
+                        // Completely prevent any click functionality
                         if (e.originalEvent) {
                             e.originalEvent.preventDefault();
                             e.originalEvent.stopPropagation();
                         }
+                        return false; // Prevent further event propagation
+                    },
+                    mousedown: function (e) {
+                        // Prevent default Leaflet highlighting
+                        if (e.originalEvent) {
+                            e.originalEvent.preventDefault();
+                            e.originalEvent.stopPropagation();
+                        }
+                        return false; // Prevent further event propagation
                     }
                 });
             }
@@ -261,7 +259,7 @@ function CountyCaseHeatMap({ enabled = true }) {
             }
         };
 
-    }, [map, countyData, caseData, enabled, selectedCountyId]);
+    }, [map, countyData, caseData, enabled]);
 
     return null;
 }

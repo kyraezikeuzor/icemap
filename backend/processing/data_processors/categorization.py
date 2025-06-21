@@ -1,256 +1,272 @@
 #!/usr/bin/env python3
 """
-Script to categorize medicloud articles using DeepSeek API.
-Categorizes articles into: raid, arrest, detention, protest, policy, opinion, other
+Optimized ICE Article Categorization & Location Extraction Script
+- Parallelized location extraction
+- Simplified "start from" resume logic (no checkpoints)
+- Skips extraction for non-ICE-related articles (category "unknown")
+- Robust address extraction via DeepSeek + Google Places API
 """
 
 import csv
-import json
-import time
 import uuid
-from urllib.parse import urlparse
 import requests
-from typing import Dict, List, Optional, Tuple
 import os
+import re
+import logging
+import json
 from datetime import datetime
 from dotenv import load_dotenv
 from tqdm import tqdm
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
-# Load environment variables from .env file
+# Load environment variables
 load_dotenv()
-
-# DeepSeek API configuration
 DEEPSEEK_API_URL = "https://api.deepseek.com/v1/chat/completions"
 DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
+GOOGLE_PLACES_API_KEY = os.getenv("GOOGLE_PLACES_API_KEY")
 
-# Categories as specified
-CATEGORIES = ["raid", "arrest", "detention", "protest", "policy", "opinion", "other"]
-
-# Batch size for processing
+# Configuration
+CATEGORIES = ["raid", "arrest", "detention", "protest", "policy", "opinion", "unknown"]
+EXTRACT_CATEGORIES = ["raid", "arrest", "detention", "protest"]
 BATCH_SIZE = 20
+MAX_WORKERS = 5
 
-def categorize_articles_batch(articles_batch: List[Dict]) -> List[Dict]:
-    """Use DeepSeek API to categorize a batch of articles and provide publisher labels."""
-    
-    if not DEEPSEEK_API_KEY:
-        raise ValueError("DEEPSEEK_API_KEY environment variable is required")
-    
-    # Prepare the articles list for the prompt
-    articles_text = ""
-    for i, article in enumerate(articles_batch, 1):
-        articles_text += f"""
-Article {i}:
-Title: {article['title']}
-Description: {article['description']}
-URL: {article['url']}
-"""
-    
-    prompt = f"""
-You are a content categorization expert. Analyze the following {len(articles_batch)} articles and categorize each one.
+# Logging setup
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
-For each article, provide:
-1. The category (must be one of: raid, arrest, detention, protest, policy, opinion, other)
-2. The publisher name (extract from the URL or provide a proper publication name)
 
-Categories:
-- raid: Articles about ICE raids, workplace raids, immigration enforcement operations
-- arrest: Articles about arrests, detentions, or apprehensions by law enforcement
-- detention: Articles about detention centers, holding facilities, or prolonged custody
-- protest: Articles about protests, demonstrations, marches, or civil unrest
-- policy: Articles about immigration policies, laws, regulations, or government decisions
-- opinion: Articles that are clearly opinion pieces, editorials, or commentary
-- other: Articles that don't fit into the above categories
-
-Articles to categorize:
-{articles_text}
-
-Respond with a JSON array where each element contains the category and publisher for the corresponding article. Format:
-[
-  {{"category": "category_name", "publisher": "publisher_name"}},
-  {{"category": "category_name", "publisher": "publisher_name"}},
-  ...
-]
-
-Ensure the array has exactly {len(articles_batch)} elements, one for each article in order.
-"""
-
-    headers = {
-        "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
-        "Content-Type": "application/json"
-    }
-    
-    data = {
-        "model": "deepseek-chat",
-        "messages": [
-            {
-                "role": "user",
-                "content": prompt
-            }
-        ],
-        "temperature": 0.1,
-        "max_tokens": 1000
-    }
-    
+def fetch_article_content(url: str) -> str:
+    """Fetch & clean article text (first 5000 chars)."""
     try:
-        response = requests.post(DEEPSEEK_API_URL, headers=headers, json=data, timeout=60)
-        response.raise_for_status()
-        
-        result = response.json()
-        content = result["choices"][0]["message"]["content"].strip()
-        
-        # Parse JSON response
-        try:
-            # Extract JSON content from between first '[' and last ']'
-            start_idx = content.find('[')
-            end_idx = content.rfind(']')
-            
-            if start_idx == -1 or end_idx == -1 or start_idx >= end_idx:
-                raise ValueError("Could not find valid JSON array markers '[' and ']'")
-            
-            json_content = content[start_idx:end_idx + 1]
-            print(f"DeepSeek JSON response: {json_content}")
-            json_response = json.loads(json_content)
-            
-            # Validate response structure
-            if not isinstance(json_response, list) or len(json_response) != len(articles_batch):
-                raise ValueError(f"Expected {len(articles_batch)} results, got {len(json_response) if isinstance(json_response, list) else 'non-list'}")
-            
-            # Process each result
-            processed_results = []
-            for i, result_item in enumerate(json_response):
-                if not isinstance(result_item, dict):
-                    print(f"Warning: Invalid result format for article {i+1}. Defaulting to 'other' category.")
-                    processed_results.append({"category": "other", "publisher": "Unknown"})
-                    continue
-                
-                category = result_item.get("category", "").lower()
-                publisher = result_item.get("publisher", "Unknown")
-                
-                # Validate category
-                if category not in CATEGORIES:
-                    print(f"Warning: Invalid category '{category}' for article {i+1}. Defaulting to 'other'.")
-                    category = "other"
-                
-                processed_results.append({"category": category, "publisher": publisher})
-            
-            return processed_results
-            
-        except (json.JSONDecodeError, ValueError) as e:
-            print(f"Warning: Invalid JSON response '{content}'. Error: {e}")
-            # Return default results for all articles
-            return [{"category": "other", "publisher": "Unknown"} for _ in articles_batch]
-        
+        headers = {'User-Agent': 'Mozilla/5.0'}
+        resp = requests.get(url, headers=headers, timeout=15)
+        resp.raise_for_status()
+        from bs4 import BeautifulSoup
+        soup = BeautifulSoup(resp.content, 'html.parser')
+        for tag in soup(['script', 'style']):
+            tag.decompose()
+        text = soup.get_text(separator=' ', strip=True)
+        return re.sub(r'\s+', ' ', text)[:5000]
     except Exception as e:
-        print(f"Error categorizing batch: {e}")
-        # Return default results for all articles
-        return [{"category": "other", "publisher": "Unknown"} for _ in articles_batch]
+        logger.warning(f"Failed to fetch {url}: {e}")
+        return ""
 
-def process_articles(input_file: str, output_file: str, scrape_date: str = "6/18/2025"):
-    """Process articles from input CSV and create categorized output CSV."""
-    
-    articles = []
-    
-    # Read input CSV
-    with open(input_file, 'r', encoding='utf-8') as f:
-        reader = csv.DictReader(f)
-        rows = list(reader)
-    
-    # Filter out rows without title or URL
-    valid_rows = []
-    for row in rows:
-        title = row.get('title', '').strip()
-        url = row.get('url', '').strip()
-        if title and url:
-            valid_rows.append(row)
-    
-    # Process articles in batches with progress tracking
-    total_batches = (len(valid_rows) + BATCH_SIZE - 1) // BATCH_SIZE
-    
-    with tqdm(total=len(valid_rows), desc="Categorizing articles", unit="article") as pbar:
-        for i in range(0, len(valid_rows), BATCH_SIZE):
-            batch = valid_rows[i:i + BATCH_SIZE]
-            
-            # Prepare batch for API call
-            batch_data = []
-            for row in batch:
-                batch_data.append({
-                    'title': row.get('title', '').strip(),
-                    'description': row.get('description', '').strip(),
-                    'url': row.get('url', '').strip()
-                })
-            
-            # Categorize batch
-            batch_results = categorize_articles_batch(batch_data)
-            
-            # Create article entries
-            for j, (row, result) in enumerate(zip(batch, batch_results)):
-                article = {
-                    'id': str(uuid.uuid4()),
-                    'title': row.get('title', '').strip(),
-                    'publisher': result['publisher'],
-                    'scrape_date': scrape_date,
-                    'category': result['category'],
-                    'url': row.get('url', '').strip()
-                }
-                
-                articles.append(article)
-                pbar.update(1)
-            
-            # Rate limiting - wait between batches
-            time.sleep(2)
-    
-    # Write output CSV
-    with open(output_file, 'w', newline='', encoding='utf-8') as f:
-        fieldnames = ['id', 'title', 'publisher', 'scrape_date', 'category', 'url']
-        writer = csv.DictWriter(f, fieldnames=fieldnames)
-        
-        writer.writeheader()
-        for article in articles:
-            writer.writerow(article)
-    
-    print(f"Processed {len(articles)} articles. Output saved to {output_file}")
-    
-    # Print category distribution
-    category_counts = {}
-    for article in articles:
-        category = article['category']
-        category_counts[category] = category_counts.get(category, 0) + 1
-    
-    print("\nCategory distribution:")
-    for category in CATEGORIES:
-        count = category_counts.get(category, 0)
-        print(f"  {category}: {count}")
+
+def categorize_batch(batch: list[dict]) -> list[dict]:
+    """Batch categorize via DeepSeek."""
+    if not DEEPSEEK_API_KEY:
+        raise RuntimeError("DEEPSEEK_API_KEY is required")
+    prompts = []
+    for art in batch:
+        prompts.append(f"Title: {art['title']}\nDesc: {art['description']}\nURL: {art['url']}")
+    prompt = (
+        "You are a content categorization expert for ICE-related articles. "
+        f"Classify each into exactly one of: {', '.join(CATEGORIES[:-1])}, or 'unknown' if completely unrelated. "
+        "Respond with a JSON array matching the input order, each object: {\"category\":\"...\",\"publisher\":\"...\"}.\n\n"
+        + "\n---\n".join(prompts)
+    )
+    headers = {"Authorization": f"Bearer {DEEPSEEK_API_KEY}", "Content-Type": "application/json"}
+    payload = {"model": "deepseek-chat", "messages":[{"role":"user","content":prompt}],
+               "temperature":0.1, "max_tokens":1000}
+    try:
+        r = requests.post(DEEPSEEK_API_URL, headers=headers, json=payload, timeout=30)
+        r.raise_for_status()
+        content = r.json()["choices"][0]["message"]["content"]
+        arr = content[content.find('['):content.rfind(']')+1]
+        parsed = json.loads(arr)
+    except Exception as e:
+        logger.error(f"DeepSeek categorization failed: {e}")
+        parsed = []
+    results = []
+    for idx, art in enumerate(batch):
+        try:
+            cat = parsed[idx].get('category','unknown').lower()
+            pub = parsed[idx].get('publisher','Unknown')
+            if cat not in CATEGORIES:
+                cat = 'unknown'
+        except Exception:
+            cat, pub = 'unknown', 'Unknown'
+        results.append({'category': cat, 'publisher': pub})
+    return results
+
+
+def extract_location_with_deepseek(title: str, content: str) -> dict:
+    """Ask DeepSeek to pull address, city, state, and zip code."""
+    if not DEEPSEEK_API_KEY:
+        raise RuntimeError("DEEPSEEK_API_KEY is required")
+    prompt = (
+        f"You are an expert in geographic extraction. Given the following article,\n"
+        f"Title: {title}\nContent Snippet: {content[:1000]}...\n"
+        "Extract a JSON object with exactly these fields:\n"
+        "{\"address\": \"<street address>\", \"city\": \"<city>\", "
+        "\"state\": \"<state or abbreviation>\", \"zip\": \"<postal code>\"}\n"
+        "If any field cannot be determined, use empty string \"\"."
+    )
+    headers = {"Authorization": f"Bearer {DEEPSEEK_API_KEY}", "Content-Type": "application/json"}
+    data = {"model": "deepseek-chat", "messages":[{"role":"user","content":prompt}],
+            "temperature":0.1, "max_tokens":200}
+    try:
+        r = requests.post(DEEPSEEK_API_URL, headers=headers, json=data, timeout=30)
+        r.raise_for_status()
+        txt = r.json()["choices"][0]["message"]["content"]
+        js = txt[txt.find('{'):txt.rfind('}')+1]
+        loc = json.loads(js)
+    except Exception as e:
+        logger.warning(f"DeepSeek location extraction failed: {e}")
+        loc = {"address": "", "city": "", "state": "", "zip": ""}
+    # ensure all keys exist
+    for k in ["address","city","state","zip"]:
+        loc.setdefault(k, "")
+    return loc
+
+
+def enhance_location_with_google_places(loc: dict) -> dict:
+    """Use Google Places to fill in lat/lng and verify address components."""
+    if not GOOGLE_PLACES_API_KEY or not loc.get("address"):
+        return loc
+    try:
+        # 1) Text Search to get place_id & geometry
+        query = f"{loc['address']}, {loc['city']}, {loc['state']}".strip(", ")
+        ts_resp = requests.get(
+            "https://maps.googleapis.com/maps/api/place/textsearch/json",
+            params={"query": query, "key": GOOGLE_PLACES_API_KEY},
+            timeout=15
+        )
+        ts_resp.raise_for_status()
+        results = ts_resp.json().get("results", [])
+        if not results:
+            return loc
+        top = results[0]
+        geometry = top.get("geometry", {}).get("location", {})
+        loc["latitude"] = geometry.get("lat", "")
+        loc["longitude"] = geometry.get("lng", "")
+
+        # 2) Place Details for structured address components
+        place_id = top.get("place_id")
+        if place_id:
+            pd_resp = requests.get(
+                "https://maps.googleapis.com/maps/api/place/details/json",
+                params={
+                    "place_id": place_id,
+                    "fields": "address_component",
+                    "key": GOOGLE_PLACES_API_KEY
+                },
+                timeout=15
+            )
+            pd_resp.raise_for_status()
+            components = pd_resp.json().get("result", {}).get("address_components", [])
+            street_num = route = ""
+            for comp in components:
+                types = comp.get("types", [])
+                if "street_number" in types:
+                    street_num = comp.get("long_name", "")
+                elif "route" in types:
+                    route = comp.get("long_name", "")
+                elif "locality" in types:
+                    loc["city"] = comp.get("long_name", loc["city"])
+                elif "administrative_area_level_1" in types:
+                    loc["state"] = comp.get("short_name", loc["state"])
+                elif "postal_code" in types:
+                    loc["zip"] = comp.get("long_name", loc["zip"])
+            if street_num and route:
+                loc["address"] = f"{street_num} {route}"
+    except Exception as e:
+        logger.warning(f"Google Places enhancement failed: {e}")
+    return loc
+
+
+def process_article(row: dict, result: dict, scrape_date: str) -> dict:
+    """Process single article: fetch, extract, enhance."""
+    art = {
+        'id': str(uuid.uuid4()),
+        'title': row['title'],
+        'publisher': result['publisher'],
+        'scrape_date': scrape_date,
+        'category': result['category'],
+        'url': row['url'],
+        # default placeholders
+        'address': '', 'city': '', 'state': '', 'zip': '',
+        'latitude': '', 'longitude': ''
+    }
+    if result['category'] in EXTRACT_CATEGORIES:
+        content = fetch_article_content(row['url'])
+        loc = extract_location_with_deepseek(row['title'], content)
+        loc = enhance_location_with_google_places(loc)
+        art.update(loc)
+    return art
+
+
+def process_articles(input_file: str, output_file: str, start_from: int = 0):
+    """Main pipeline: categorize & extract with --start-from resume."""
+    with open(input_file, newline='', encoding='utf-8') as f:
+        rows = [r for r in csv.DictReader(f) if r.get('title') and r.get('url')]
+    total = len(rows)
+    if start_from >= total:
+        print(f"Start index {start_from} >= total articles {total}, nothing to do.")
+        return
+
+    mode = 'a' if start_from > 0 else 'w'
+    with open(output_file, mode, newline='', encoding='utf-8') as outf:
+        fieldnames = [
+            'id','title','publisher','scrape_date','category','url',
+            'address','city','state','zip','latitude','longitude'
+        ]
+        writer = csv.DictWriter(outf, fieldnames=fieldnames)
+        if start_from == 0:
+            writer.writeheader()
+
+        pbar = tqdm(total=total - start_from, desc="Processing articles", unit="article")
+        scrape_date = datetime.now().strftime("%Y-%m-%d")
+
+        for i in range(start_from, total, BATCH_SIZE):
+            batch = rows[i:i+BATCH_SIZE]
+            batch_data = [
+                {'title': r['title'], 'description': r.get('description',''), 'url': r['url']}
+                for r in batch
+            ]
+            results = categorize_batch(batch_data)
+
+            with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+                futures = [
+                    executor.submit(process_article, r, res, scrape_date)
+                    for r, res in zip(batch, results)
+                ]
+                for fut in as_completed(futures):
+                    art = fut.result()
+                    writer.writerow(art)
+                    pbar.update(1)
+        pbar.close()
+    print(f"Finished. Output saved to {output_file}")
+
 
 def main():
-    """Main function to run the categorization script."""
-    
-    # File paths
+    import sys
     input_file = "data/mediacloud_articles.csv"
-    output_file = "data/articles.csv"
-    
-    # Check if input file exists
+    output_file = "data/articles_with_locations2.csv"
+    start_from = 0
+    args = sys.argv[1:]
+    if args and args[0] in ('-h', '--help'):
+        print("Usage: python categorization.py [--start-from N]")
+        return
+    if args and args[0] == '--start-from' and len(args) > 1:
+        try:
+            start_from = int(args[1])
+        except ValueError:
+            print("Error: start index must be an integer.")
+            return
+
     if not os.path.exists(input_file):
-        print(f"Error: Input file {input_file} not found.")
+        print(f"Error: Input file '{input_file}' not found.")
         return
-    
-    # Check if API key is set
     if not DEEPSEEK_API_KEY:
-        print("Error: DEEPSEEK_API_KEY environment variable is not set.")
-        print("Please set it with: export DEEPSEEK_API_KEY='your-api-key-here'")
+        print("Error: DEEPSEEK_API_KEY is not set.")
         return
-    
-    print("Starting article categorization...")
-    print(f"Input file: {input_file}")
-    print(f"Output file: {output_file}")
-    print(f"Categories: {', '.join(CATEGORIES)}")
-    print()
-    
-    try:
-        process_articles(input_file, output_file)
-        print("\nCategorization completed successfully!")
-        
-    except Exception as e:
-        print(f"Error during processing: {e}")
+
+    total = len(list(csv.DictReader(open(input_file, encoding='utf-8'))))
+    print(f"Starting from article {start_from+1} of {total}")
+    process_articles(input_file, output_file, start_from)
+
 
 if __name__ == "__main__":
     main()

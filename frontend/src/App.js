@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import MapComponent from './MapComponent';
 import InfoModal from './InfoModal';
+import InspectionModal from './InspectionModal';
 import UnifiedPanel from './UnifiedPanel';
 import BuyMeACoffee from './BuyMeACoffee';
 import ContactInfo from './components/ContactInfo';
@@ -45,10 +46,28 @@ function parseCSVLine(line) {
     return result;
 }
 
+// Helper function to parse JSONL file
+function parseJSONL(text) {
+    const lines = text.trim().split('\n');
+    return lines
+        .map(line => {
+            try {
+                return JSON.parse(line);
+            } catch (error) {
+                console.warn('Failed to parse JSONL line:', line);
+                return null;
+            }
+        })
+        .filter(item => item !== null);
+}
+
 function App() {
     const [arrestData, setArrestData] = useState([]);
+    const [inspectionData, setInspectionData] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(true);
+    const [showInspectionModal, setShowInspectionModal] = useState(false);
+    const [selectedInspection, setSelectedInspection] = useState(null);
     const [cursorPosition, setCursorPosition] = useState(null);
     const [mapClickCount, setMapClickCount] = useState(0);
     const [isMobile, setIsMobile] = useState(false);
@@ -71,16 +90,17 @@ function App() {
     }, []);
 
     useEffect(() => {
-        const loadArrestData = async () => {
+        const loadData = async () => {
             try {
-                const response = await fetch('/arrests_with_titles.csv');
-                const csvText = await response.text();
+                // Load arrest data
+                const arrestResponse = await fetch('/arrests_with_titles.csv');
+                const arrestCsvText = await arrestResponse.text();
 
                 // Parse CSV with proper handling of quoted fields
-                const lines = csvText.split('\n');
+                const lines = arrestCsvText.split('\n');
                 const headers = parseCSVLine(lines[0]);
 
-                const data = lines.slice(1).map(line => {
+                const arrestData = lines.slice(1).map(line => {
                     if (!line.trim()) return null; // Skip empty lines
                     const values = parseCSVLine(line);
                     const arrest = {};
@@ -96,15 +116,32 @@ function App() {
                     !isNaN(parseFloat(arrest.longitude))
                 );
 
-                setArrestData(data);
+                setArrestData(arrestData);
+
+                // Load inspection data from new source and filter for high similarity scores
+                const inspectionResponse = await fetch('/facilities_with_coordinates_results.jsonl');
+                const inspectionText = await inspectionResponse.text();
+                const allInspectionData = parseJSONL(inspectionText);
+
+                // Filter for entries with name_similarity_score > 0.9
+                const filteredInspectionData = allInspectionData.filter(facility =>
+                    facility.name_similarity_score > 0.9 &&
+                    facility.location_latitude &&
+                    facility.location_longitude &&
+                    !isNaN(parseFloat(facility.location_latitude)) &&
+                    !isNaN(parseFloat(facility.location_longitude))
+                );
+
+                setInspectionData(filteredInspectionData);
+
             } catch (error) {
-                console.error('Error loading arrest data:', error);
+                console.error('Error loading data:', error);
             } finally {
                 setLoading(false);
             }
         };
 
-        loadArrestData();
+        loadData();
     }, []);
 
     const closeModal = () => {
@@ -119,10 +156,20 @@ function App() {
         setMapClickCount(prev => prev + 1);
     };
 
+    const handleInspectionPinClick = (inspection) => {
+        setSelectedInspection(inspection);
+        setShowInspectionModal(true);
+    };
+
+    const closeInspectionModal = () => {
+        setShowInspectionModal(false);
+        setSelectedInspection(null);
+    };
+
     if (loading) {
         return (
             <div className="loading">
-                <h2>Loading arrest data...</h2>
+                <h2>Loading data...</h2>
             </div>
         );
     }
@@ -130,6 +177,11 @@ function App() {
     return (
         <div className="App">
             <InfoModal isOpen={showModal} onClose={closeModal} />
+            <InspectionModal
+                isOpen={showInspectionModal}
+                onClose={closeInspectionModal}
+                inspectionData={selectedInspection}
+            />
             <ContactInfo />
             <BuyMeACoffee isMobile={isMobile} />
             <UnifiedPanel
@@ -140,8 +192,10 @@ function App() {
             />
             <MapComponent
                 arrestData={arrestData}
+                inspectionData={inspectionData}
                 onCursorMove={handleCursorMove}
                 onMapClick={handleMapClick}
+                onInspectionPinClick={handleInspectionPinClick}
             />
         </div>
     );
