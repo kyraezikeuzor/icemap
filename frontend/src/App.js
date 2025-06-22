@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import MapComponent from './MapComponent';
 import InfoModal from './InfoModal';
+import DonationModal from './DonationModal';
 import InspectionModal from './InspectionModal';
 import UnifiedPanel from './UnifiedPanel';
 import BuyMeACoffee from './BuyMeACoffee';
@@ -67,7 +68,8 @@ function App() {
     const [arrestData, setArrestData] = useState([]);
     const [inspectionData, setInspectionData] = useState([]);
     const [loading, setLoading] = useState(false); // Changed to false to show map immediately
-    const [showModal, setShowModal] = useState(true);
+    const [showModal, setShowModal] = useState(false);
+    const [showDonationModal, setShowDonationModal] = useState(false);
     const [showInspectionModal, setShowInspectionModal] = useState(false);
     const [selectedInspection, setSelectedInspection] = useState(null);
     const [cursorPosition, setCursorPosition] = useState(null);
@@ -77,6 +79,22 @@ function App() {
         arrestData: false,
         inspectionData: false
     });
+
+    // Visit tracking logic
+    useEffect(() => {
+        const visitCount = localStorage.getItem('icemap_visit_count');
+        const currentCount = visitCount ? parseInt(visitCount) : 0;
+        const newCount = currentCount + 1;
+
+        localStorage.setItem('icemap_visit_count', newCount.toString());
+
+        // Show info modal on first visit, donation modal on second visit
+        if (newCount === 1) {
+            setShowModal(true);
+        } else if (newCount === 2) {
+            setShowDonationModal(true);
+        }
+    }, []);
 
     // Detect mobile device on mount and window resize
     useEffect(() => {
@@ -173,6 +191,10 @@ function App() {
         setShowModal(false);
     };
 
+    const closeDonationModal = () => {
+        setShowDonationModal(false);
+    };
+
     const handleCursorMove = (position) => {
         setCursorPosition(position);
     };
@@ -205,6 +227,7 @@ function App() {
     return (
         <div className="App">
             <InfoModal isOpen={showModal} onClose={closeModal} />
+            <DonationModal isOpen={showDonationModal} onClose={closeDonationModal} />
             <InspectionModal
                 isOpen={showInspectionModal}
                 onClose={closeInspectionModal}
