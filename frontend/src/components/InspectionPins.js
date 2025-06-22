@@ -117,7 +117,10 @@ function InspectionPins({ inspectionData, onPinClick, enabled = true }) {
 
         // Add new markers
         inspectionData
-            .filter(inspection => inspection['Detention Center'] !== 'Linn County Jail')
+            .filter(inspection =>
+                inspection['Detention Center'] !== 'Linn County Jail' &&
+                inspection['Detention Center'] !== 'Monroe County Detention Center'
+            )
             .forEach(inspection => {
                 const lat = parseFloat(inspection.location_latitude);
                 const lng = parseFloat(inspection.location_longitude);
