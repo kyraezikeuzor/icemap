@@ -119,7 +119,8 @@ function InspectionPins({ inspectionData, onPinClick, enabled = true }) {
         inspectionData
             .filter(inspection =>
                 inspection['Detention Center'] !== 'Linn County Jail' &&
-                inspection['Detention Center'] !== 'Monroe County Detention Center'
+                inspection['Detention Center'] !== 'Monroe County Detention Center' &&
+                inspection['Detention Center'] !== 'Pottawattamie County Jail'
             )
             .forEach(inspection => {
                 const lat = parseFloat(inspection.location_latitude);
