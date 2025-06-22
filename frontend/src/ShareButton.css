@@ -1,0 +1,105 @@
+.share-button-container {
+    position: absolute;
+    top: 50%;
+    right: 20px;
+    transform: translateY(-50%);
+    z-index: 1000;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.share-button-container.mobile {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    transform: none;
+}
+
+.share-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+    background: rgba(0, 0, 0, 0.6);
+    border: none;
+    border-radius: 6px;
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    height: 32px;
+    width: 32px;
+    backdrop-filter: blur(10px);
+}
+
+.share-button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    background: rgba(0, 0, 0, 0.7);
+}
+
+.share-button:active {
+    transform: translateY(0);
+    transition: all 0.1s ease;
+}
+
+.share-icon {
+    width: 16px;
+    height: 16px;
+}
+
+/* Desktop positioning - right center of screen */
+@media (min-width: 769px) {
+    .share-button-container {
+        position: absolute;
+        top: 50%;
+        right: 20px;
+        transform: translateY(-50%);
+    }
+}
+
+/* Mobile styling */
+.share-button-container.mobile {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    transform: none;
+}
+
+.share-button-container.mobile .share-button {
+    height: 36px;
+    width: 36px;
+    padding: 10px;
+}
+
+.share-button-container.mobile .share-icon {
+    width: 18px;
+    height: 18px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .share-button-container {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        transform: none;
+    }
+
+    .share-button {
+        height: 36px;
+        width: 36px;
+        padding: 10px;
+    }
+
+    .share-icon {
+        width: 18px;
+        height: 18px;
+    }
+}
+
+/* Ensure button stays above other elements */
+.share-button {
+    z-index: 1001;
+}

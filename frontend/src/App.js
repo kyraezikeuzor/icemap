@@ -4,6 +4,7 @@ import InfoModal from './InfoModal';
 import InspectionModal from './InspectionModal';
 import UnifiedPanel from './UnifiedPanel';
 import BuyMeACoffee from './BuyMeACoffee';
+import ShareButton from './ShareButton';
 import ContactInfo from './components/ContactInfo';
 import pako from 'pako';
 import './App.css';
@@ -210,6 +211,7 @@ function App() {
                 inspectionData={selectedInspection}
             />
             <ContactInfo />
+            <ShareButton isMobile={isMobile} />
             <BuyMeACoffee isMobile={isMobile} />
             <UnifiedPanel
                 cursorPosition={cursorPosition}
