@@ -95,7 +95,7 @@ function InspectionPins({ inspectionData, onPinClick, enabled = true }) {
             map.createPane('detentionCenterPane');
             map.getPane('detentionCenterPane').style.zIndex = 650; // Higher than city markers (450) but lower than popups (1000)
         }
-        
+
         if (!enabled || !inspectionData || inspectionData.length === 0) {
             // Clear existing markers
             markersRef.current.forEach(marker => {
@@ -116,61 +116,63 @@ function InspectionPins({ inspectionData, onPinClick, enabled = true }) {
         markersRef.current = [];
 
         // Add new markers
-        inspectionData.forEach(inspection => {
-            const lat = parseFloat(inspection.location_latitude);
-            const lng = parseFloat(inspection.location_longitude);
+        inspectionData
+            .filter(inspection => inspection['Detention Center'] !== 'Linn County Jail')
+            .forEach(inspection => {
+                const lat = parseFloat(inspection.location_latitude);
+                const lng = parseFloat(inspection.location_longitude);
 
-            if (isNaN(lat) || isNaN(lng)) return;
+                if (isNaN(lat) || isNaN(lng)) return;
 
-            const summaryScore = parseInt(inspection.summary_score) || 0;
-            const icon = createInspectionIcon(summaryScore);
+                const summaryScore = parseInt(inspection.summary_score) || 0;
+                const icon = createInspectionIcon(summaryScore);
 
-            const marker = L.marker([lat, lng], { 
-                icon,
-                pane: 'detentionCenterPane'
+                const marker = L.marker([lat, lng], {
+                    icon,
+                    pane: 'detentionCenterPane'
+                });
+
+                // Create tooltip for hover
+                const tooltip = L.tooltip({
+                    permanent: false,
+                    direction: 'top',
+                    offset: [0, -10],
+                    className: 'inspection-tooltip',
+                    opacity: 0.9
+                });
+
+                // Set tooltip content
+                tooltip.setContent(`
+                    <div style="
+                        text-align: center; 
+                        min-width: 200px; 
+                        max-width: 300px;
+                        font-size: 12px;
+                        line-height: 1.3;
+                        word-wrap: break-word;
+                        background-color: white;
+                        color: #666666;
+                        padding: 8px;
+                        border-radius: 4px;
+                        border: 1px solid #ccc;
+                        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+                    ">
+                        <strong>${inspection['Detention Center']}</strong>
+                    </div>
+                `);
+
+                marker.bindTooltip(tooltip);
+
+                // Add click handler
+                marker.on('click', () => {
+                    if (onPinClick) {
+                        onPinClick(inspection);
+                    }
+                });
+
+                marker.addTo(map);
+                markersRef.current.push(marker);
             });
-
-            // Create tooltip for hover
-            const tooltip = L.tooltip({
-                permanent: false,
-                direction: 'top',
-                offset: [0, -10],
-                className: 'inspection-tooltip',
-                opacity: 0.9
-            });
-
-            // Set tooltip content
-            tooltip.setContent(`
-                <div style="
-                    text-align: center; 
-                    min-width: 200px; 
-                    max-width: 300px;
-                    font-size: 12px;
-                    line-height: 1.3;
-                    word-wrap: break-word;
-                    background-color: white;
-                    color: #666666;
-                    padding: 8px;
-                    border-radius: 4px;
-                    border: 1px solid #ccc;
-                    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-                ">
-                    <strong>${inspection['Detention Center']}</strong>
-                </div>
-            `);
-
-            marker.bindTooltip(tooltip);
-
-            // Add click handler
-            marker.on('click', () => {
-                if (onPinClick) {
-                    onPinClick(inspection);
-                }
-            });
-
-            marker.addTo(map);
-            markersRef.current.push(marker);
-        });
 
         return () => {
             // Cleanup markers on unmount
