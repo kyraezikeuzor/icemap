@@ -14,7 +14,7 @@ function InfoModal({ isOpen, onClose }) {
                         We strongly believe that the American people should have full insight into the actions of its democratically-elected government.
                     </p>
                     <p>
-                        icemap.dev aims to provide a comprehensive view of the activities and the injustices of America's Immigration Customs Agency (ICE),
+                        icemap.dev aims to provide a comprehensive view of the activities of America's Immigration Customs Agency (ICE),
                         with specific focus on its Enforcement and Removal Operations department (ERO).
                     </p>
                     <p>

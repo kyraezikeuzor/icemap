@@ -137,6 +137,12 @@ function InspectionModal({ isOpen, onClose, inspectionData }) {
                         <small className="disclaimer" style={{ color: '#666' }}>
                             The summaries provided may contain inaccuracies. For the most accurate information, please refer to the original inspection reports.
                         </small>
+
+                    </div>
+                    <div className="inspection-footer">
+                        <small className="disclaimer" style={{ color: '#666' }}>
+                            Report any inaccuracies to <a href="mailto:contact@icemap.dev">contact@icemap.dev</a>.
+                        </small>
                     </div>
 
                 </div>
