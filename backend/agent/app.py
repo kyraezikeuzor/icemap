@@ -949,6 +949,125 @@ def process_api_articles(
     
     return accepted, ignored
 
+def run_continuous_processing(
+    max_articles_per_batch: int = 100,
+    wait_minutes: int = 5,
+    *,
+    # Inject the tool chain so tests can monkey-patch
+    fetch_text: ToolFunc = getText,
+    relevance:  ToolFunc = judgeRelevance,
+    extract_addr: ToolFunc = extractAddressFromText,
+    tag_coords: ToolFunc = geoTag,
+    classify:   ToolFunc = categorize,
+    canonical_pub: ToolFunc = addPublisher,
+    enrich_addr: ToolFunc = parseAddressInfo,
+    sufficiency: ToolFunc = judgeEntrySufficiency,
+    persist: ToolFunc = addArticle,
+    mark_processed: ToolFunc = markArticleAsProcessed,
+    get_articles: ToolFunc = getUnprocessedArticles,
+) -> None:
+    """
+    Run the ICE Agent continuously, processing articles in batches.
+    
+    When no articles are available, wait for the specified number of minutes
+    before checking again. This function runs indefinitely until interrupted.
+    """
+    import time
+    from datetime import datetime
+    
+    print("=" * 80)
+    print("ICE Agent - Continuous Processing Mode")
+    print("=" * 80)
+    print(f"Max articles per batch: {max_articles_per_batch}")
+    print(f"Wait time when no articles: {wait_minutes} minutes")
+    print(f"Started at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print("=" * 80)
+    
+    batch_count = 0
+    total_accepted = 0
+    total_ignored = 0
+    
+    while True:
+        batch_count += 1
+        current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        
+        print(f"\n{'='*80}")
+        print(f"BATCH #{batch_count} - {current_time}")
+        print(f"{'='*80}")
+        
+        try:
+            # Check for unprocessed articles
+            print("Checking for unprocessed articles...")
+            csv_data = get_articles()
+            
+            if not csv_data.strip():
+                print(f"No unprocessed articles found. Waiting {wait_minutes} minutes...")
+                print(f"Next check at: {(datetime.now().timestamp() + wait_minutes * 60):.0f}")
+                
+                # Wait for specified minutes
+                time.sleep(wait_minutes * 60)
+                continue
+            
+            print(f"Found articles to process. Starting batch...")
+            
+            # Process the current batch
+            accepted, ignored = process_api_articles(
+                max_articles=max_articles_per_batch,
+                fetch_text=fetch_text,
+                relevance=relevance,
+                extract_addr=extract_addr,
+                tag_coords=tag_coords,
+                classify=classify,
+                canonical_pub=canonical_pub,
+                enrich_addr=enrich_addr,
+                sufficiency=sufficiency,
+                persist=persist,
+                mark_processed=mark_processed,
+            )
+            
+            # Update totals
+            total_accepted += accepted
+            total_ignored += ignored
+            
+            # Show batch summary
+            print(f"\n{'='*80}")
+            print(f"BATCH #{batch_count} COMPLETE")
+            print(f"{'='*80}")
+            print(f"Batch results: {accepted} accepted, {ignored} ignored")
+            print(f"Running totals: {total_accepted} accepted, {total_ignored} ignored")
+            print(f"Total processed: {total_accepted + total_ignored}")
+            if (total_accepted + total_ignored) > 0:
+                print(f"Overall success rate: {total_accepted/(total_accepted+total_ignored)*100:.1f}%")
+            print(f"Completed at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+            
+            # If we processed fewer articles than the max, we might be caught up
+            if accepted + ignored < max_articles_per_batch:
+                print(f"Processed fewer articles than max ({accepted + ignored} < {max_articles_per_batch})")
+                print(f"May be caught up. Waiting {wait_minutes} minutes before next check...")
+                time.sleep(wait_minutes * 60)
+            
+        except KeyboardInterrupt:
+            print(f"\n{'='*80}")
+            print("INTERRUPTED BY USER")
+            print(f"{'='*80}")
+            print(f"Final totals: {total_accepted} accepted, {total_ignored} ignored")
+            print(f"Total processed: {total_accepted + total_ignored}")
+            if (total_accepted + total_ignored) > 0:
+                print(f"Overall success rate: {total_accepted/(total_accepted+total_ignored)*100:.1f}%")
+            print(f"Stopped at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+            break
+            
+        except Exception as e:
+            print(f"\n{'='*80}")
+            print(f"ERROR IN BATCH #{batch_count}")
+            print(f"{'='*80}")
+            print(f"Error: {e}")
+            import traceback
+            print(f"Full error details:")
+            traceback.print_exc()
+            print(f"Waiting {wait_minutes} minutes before retrying...")
+            time.sleep(wait_minutes * 60)
+
 def process_stream(
     csv_blob: str,
     *,
@@ -1108,15 +1227,37 @@ def process_api_endpoint():
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
+@app.post("/process-continuous")
+def process_continuous_endpoint():
+    """Start continuous processing of articles from the API."""
+    try:
+        # Start continuous processing in a separate thread to avoid blocking the API
+        import threading
+        
+        def run_continuous():
+            run_continuous_processing(max_articles_per_batch=100, wait_minutes=5)
+        
+        thread = threading.Thread(target=run_continuous, daemon=True)
+        thread.start()
+        
+        return {
+            "status": "ok",
+            "message": "Continuous processing started in background",
+            "note": "Use Ctrl+C to stop the process"
+        }
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
 # ---------------------------------------------------------------------------
 # ────────────────────────────  RUNNER  ─────────────────────────────────────
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
     # ── Development entry-point ────────────────────────────────────────────
-    # Process articles from API
-    print("ICE Agent Starting...")
-    process_api_articles(10)
+    # Run continuous processing of articles from API
+    print("ICE Agent Starting in Continuous Mode...")
+    print("Press Ctrl+C to stop the process")
+    run_continuous_processing(max_articles_per_batch=100, wait_minutes=5)
     
     # ── Server mode ────────────────────────────────────────────────────────
     # uvicorn ice_agent.app:app --reload --host 0.0.0.0 --port 8000
