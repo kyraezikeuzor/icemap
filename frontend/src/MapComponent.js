@@ -200,7 +200,18 @@ function ZoomBasedInspectionPins({ inspectionData, onPinClick, enabled }) {
     );
 }
 
+function useIsDesktop(threshold = 900) {
+    const [isDesktop, setIsDesktop] = useState(() => window.innerWidth > threshold);
+    useEffect(() => {
+        const handleResize = () => setIsDesktop(window.innerWidth > threshold);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, [threshold]);
+    return isDesktop;
+}
+
 function MapComponent({ arrestData, inspectionData, onCursorMove, onMapClick, onInspectionPinClick, showDetentionPins, onToggleDetentionPins }) {
+    const isDesktop = useIsDesktop();
     // Calculate center of the map based on data
     const center = arrestData.length > 0
         ? [
@@ -214,6 +225,20 @@ function MapComponent({ arrestData, inspectionData, onCursorMove, onMapClick, on
             <div className="branding-overlay">
                 icemap.dev
             </div>
+            {/* Desktop controls - only show on web/desktop */}
+            {isDesktop && (
+                <div className="map-controls">
+                    <div className={`checkbox-container ${showDetentionPins ? 'checked' : ''}`}>
+                        <div
+                            className={`checkbox ${showDetentionPins ? 'checked' : ''}`}
+                            onClick={onToggleDetentionPins}
+                        >
+                            {showDetentionPins && <div className="checkmark">✓</div>}
+                        </div>
+                        <span className="checkbox-label">Detention Center Pins</span>
+                    </div>
+                </div>
+            )}
             <MapContainer
                 center={center}
                 zoom={4}
