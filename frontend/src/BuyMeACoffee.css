@@ -8,10 +8,8 @@
 }
 
 .buy-me-coffee.mobile {
-    /* bottom: 10px; */
-    /* right: 10px; */
-    transform: none;
-    /* Position in bottom right corner on mobile */
+    /* Hide on mobile since it's now in the mobile button bar */
+    display: none;
 }
 
 .coffee-button {
@@ -115,9 +113,8 @@
 /* Responsive adjustments */
 @media (max-width: 768px) {
     .buy-me-coffee {
-        /* bottom: 10px; */
-        /* right: 10px; */
-        transform: none;
+        /* Hide on mobile since it's now in the mobile button bar */
+        display: none;
     }
 
     .buy-me-coffee .coffee-text {

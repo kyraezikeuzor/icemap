@@ -200,9 +200,7 @@ function ZoomBasedInspectionPins({ inspectionData, onPinClick, enabled }) {
     );
 }
 
-function MapComponent({ arrestData, inspectionData, onCursorMove, onMapClick, onInspectionPinClick }) {
-    const [showDetentionPins, setShowDetentionPins] = useState(true);
-
+function MapComponent({ arrestData, inspectionData, onCursorMove, onMapClick, onInspectionPinClick, showDetentionPins, onToggleDetentionPins }) {
     // Calculate center of the map based on data
     const center = arrestData.length > 0
         ? [
@@ -216,16 +214,16 @@ function MapComponent({ arrestData, inspectionData, onCursorMove, onMapClick, on
             <div className="branding-overlay">
                 icemap.dev
             </div>
-            <div className="map-controls">
+            {/* Desktop controls - only show on non-mobile */}
+            <div className="map-controls desktop-only">
                 <div className={`checkbox-container ${showDetentionPins ? 'checked' : ''}`}>
                     <div
                         className={`checkbox ${showDetentionPins ? 'checked' : ''}`}
-                        onClick={() => setShowDetentionPins(!showDetentionPins)}
+                        onClick={onToggleDetentionPins}
                     >
                         {showDetentionPins && <div className="checkmark">✓</div>}
                     </div>
                     <span className="checkbox-label">Detention Center Pins</span>
-
                 </div>
             </div>
             <MapContainer

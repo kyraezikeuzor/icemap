@@ -13,6 +13,13 @@
     border: 1px solid rgba(0, 0, 0, 0.1);
 }
 
+/* Hide desktop controls on mobile */
+@media (max-width: 768px) {
+    .map-controls.desktop-only {
+        display: none;
+    }
+}
+
 .map-controls h3 {
     margin-top: 0;
     margin-bottom: 12px;
@@ -43,4 +50,3 @@
     width: 16px;
     height: 16px;
 }
-

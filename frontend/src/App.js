@@ -7,6 +7,7 @@ import UnifiedPanel from './UnifiedPanel';
 import BuyMeACoffee from './BuyMeACoffee';
 import ShareButton from './ShareButton';
 import ContactInfo from './components/ContactInfo';
+import MobileButtonBar from './MobileButtonBar';
 import pako from 'pako';
 import './App.css';
 
@@ -75,6 +76,8 @@ function App() {
     const [cursorPosition, setCursorPosition] = useState(null);
     const [mapClickCount, setMapClickCount] = useState(0);
     const [isMobile, setIsMobile] = useState(false);
+    const [showDetentionPins, setShowDetentionPins] = useState(true);
+    const [isPanelMinimized, setIsPanelMinimized] = useState(false);
     const [dataLoadingStatus, setDataLoadingStatus] = useState({
         arrestData: false,
         inspectionData: false
@@ -233,14 +236,21 @@ function App() {
                 onClose={closeInspectionModal}
                 inspectionData={selectedInspection}
             />
-            <ContactInfo />
+            <ContactInfo isMobile={isMobile} />
             <ShareButton isMobile={isMobile} />
             <BuyMeACoffee isMobile={isMobile} />
+            <MobileButtonBar
+                isMobile={isMobile}
+                showDetentionPins={showDetentionPins}
+                onToggleDetentionPins={() => setShowDetentionPins(!showDetentionPins)}
+                isPanelMinimized={isPanelMinimized}
+            />
             <UnifiedPanel
                 cursorPosition={cursorPosition}
                 arrestData={arrestData}
                 onMapClick={mapClickCount}
                 isMobile={isMobile}
+                onPanelStateChange={setIsPanelMinimized}
             />
             <MapComponent
                 arrestData={arrestData}
@@ -248,6 +258,8 @@ function App() {
                 onCursorMove={handleCursorMove}
                 onMapClick={handleMapClick}
                 onInspectionPinClick={handleInspectionPinClick}
+                showDetentionPins={showDetentionPins}
+                onToggleDetentionPins={() => setShowDetentionPins(!showDetentionPins)}
             />
         </div>
     );

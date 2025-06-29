@@ -3,7 +3,7 @@ import '../BuyMeACoffee.css';
 
 const contactEmail = 'contact@icemap.dev';
 
-export default function ContactInfo() {
+export default function ContactInfo({ isMobile }) {
     const [showEmail, setShowEmail] = useState(false);
 
     const handleClick = () => {
@@ -14,6 +14,11 @@ export default function ContactInfo() {
             setShowEmail(false);
         }
     };
+
+    // Hide on mobile since it's now in the mobile button bar
+    if (isMobile) {
+        return null;
+    }
 
     return (
         <div className="buy-me-coffee" style={{ bottom: 80, right: 20 }}>

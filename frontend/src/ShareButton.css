@@ -8,10 +8,8 @@
 }
 
 .share-button-container.mobile {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    transform: none;
+    /* Hide on mobile since it's now in the mobile button bar */
+    display: none;
 }
 
 .share-button {
@@ -61,10 +59,8 @@
 
 /* Mobile styling */
 .share-button-container.mobile {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    transform: none;
+    /* Hide on mobile since it's now in the mobile button bar */
+    display: none;
 }
 
 .share-button-container.mobile .share-button {
@@ -81,10 +77,8 @@
 /* Responsive adjustments */
 @media (max-width: 768px) {
     .share-button-container {
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        transform: none;
+        /* Hide on mobile since it's now in the mobile button bar */
+        display: none;
     }
 
     .share-button {

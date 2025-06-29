@@ -34,8 +34,11 @@ function parseCSVLine(line) {
     return result;
 }
 
-function UnifiedPanel({ cursorPosition, arrestData, onMapClick, isMobile }) {
+function UnifiedPanel({ cursorPosition, arrestData, onMapClick, isMobile, onPanelStateChange }) {
     const [activeTab, setActiveTab] = useState('incidents'); // 'incidents' or 'news'
+    const [isPanelMinimized, setIsPanelMinimized] = useState(false);
+    const [touchStartY, setTouchStartY] = useState(null);
+    const [touchStartTime, setTouchStartTime] = useState(null);
 
     // Incidents state
     const [nearbyIncidents, setNearbyIncidents] = useState([]);
@@ -57,6 +60,57 @@ function UnifiedPanel({ cursorPosition, arrestData, onMapClick, isMobile }) {
     const articlesListRef = useRef(null);
     const incidentsContentRef = useRef(null);
     const newsContentRef = useRef(null);
+    const panelRef = useRef(null);
+
+    // Touch handlers for swipe-to-minimize
+    const handleTouchStart = (e) => {
+        if (!isMobile) return;
+        setTouchStartY(e.touches[0].clientY);
+        setTouchStartTime(Date.now());
+    };
+
+    const handleTouchMove = (e) => {
+        if (!isMobile || !touchStartY) return;
+
+        const currentY = e.touches[0].clientY;
+        const deltaY = currentY - touchStartY;
+
+        // If swiping down more than 50px, minimize the panel
+        if (deltaY > 50) {
+            setIsPanelMinimized(true);
+            setTouchStartY(null);
+        }
+    };
+
+    const handleTouchEnd = () => {
+        if (!isMobile) return;
+
+        const touchDuration = Date.now() - touchStartTime;
+
+        // If it was a quick tap (less than 200ms) and minimal movement, don't minimize
+        if (touchDuration < 200 && Math.abs(touchStartY - (touchStartY || 0)) < 10) {
+            // This was likely a tap, not a swipe
+        }
+
+        setTouchStartY(null);
+        setTouchStartTime(null);
+    };
+
+    const minimizePanel = () => {
+        setIsPanelMinimized(true);
+    };
+
+    const restorePanel = () => {
+        setIsPanelMinimized(false);
+    };
+
+    // Effect to restore panel when map is clicked
+    useEffect(() => {
+        if (isMobile && isPanelMinimized && onMapClick > lastClickCount) {
+            restorePanel();
+        }
+        setLastClickCount(onMapClick);
+    }, [onMapClick, isMobile, isPanelMinimized, lastClickCount]);
 
     // Clock effect for news
     useEffect(() => {
@@ -156,9 +210,9 @@ function UnifiedPanel({ cursorPosition, arrestData, onMapClick, isMobile }) {
         setDisplayedIncidentCount(20);
     }, [cursorPosition, arrestData, isPersistent]);
 
-    // Effect to handle map clicks - toggle persistent mode
+    // Effect to handle map clicks - toggle persistent mode (only when panel is not minimized)
     useEffect(() => {
-        if (onMapClick > lastClickCount) {
+        if (onMapClick > lastClickCount && !isPanelMinimized) {
             if (nearbyIncidents.length > 0) {
                 if (!isPersistent) {
                     // First click - pause the current incidents and switch to incidents tab
@@ -179,7 +233,7 @@ function UnifiedPanel({ cursorPosition, arrestData, onMapClick, isMobile }) {
             }
         }
         setLastClickCount(onMapClick);
-    }, [onMapClick, nearbyIncidents, isPersistent, lastClickCount]);
+    }, [onMapClick, nearbyIncidents, isPersistent, lastClickCount, isPanelMinimized]);
 
     // Load news articles
     useEffect(() => {
@@ -373,118 +427,155 @@ function UnifiedPanel({ cursorPosition, arrestData, onMapClick, isMobile }) {
         });
     };
 
+    // Notify parent when panel state changes
+    useEffect(() => {
+        if (onPanelStateChange) {
+            onPanelStateChange(isPanelMinimized);
+        }
+    }, [isPanelMinimized, onPanelStateChange]);
+
     return (
-        <div className={`unified-panel ${isMobile ? 'mobile' : ''}`}>
-            <div className="unified-panel-header">
+        <>
+            {/* Restore button for mobile when panel is minimized */}
+            {isMobile && isPanelMinimized && (
+                <button
+                    className="mobile-restore-button"
+                    onClick={restorePanel}
+                    aria-label="Restore panel"
+                >
+                    <span className="restore-icon">▲</span>
+                    <span className="restore-text">Panel</span>
+                </button>
+            )}
 
-                {!isMobile && (
-                    <div className="paused-indicator">
-                        {activeTab === 'incidents'
-                            ? (isPersistent ? 'Click to Unpause' : 'Click to Pause')
-                            : 'News Feed'
-                        }
-                    </div>
-                )}
-                <div className="live-clock-container">
-                    <span className="live-clock">{formatMilitaryTime(currentTime)}</span>
-                </div>
-                <div className="header-top">
-                    <div className="tab-toggle">
+            <div
+                className={`unified-panel ${isMobile ? 'mobile' : ''} ${isMobile && isPanelMinimized ? 'minimized' : ''}`}
+                ref={panelRef}
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+            >
+                <div className="unified-panel-header">
+                    {/* Minimize button for mobile */}
+                    {isMobile && !isPanelMinimized && (
                         <button
-                            className={`tab-button ${activeTab === 'incidents' ? 'active' : ''}`}
-                            onClick={() => handleTabSwitch('incidents')}
+                            className="mobile-minimize-button"
+                            onClick={minimizePanel}
+                            aria-label="Minimize panel"
                         >
-                            Incidents
+                            <span className="minimize-icon">▼</span>
                         </button>
-                        <button
-                            className={`tab-button ${activeTab === 'news' ? 'active' : ''}`}
-                            onClick={() => handleTabSwitch('news')}
-                        >
-                            {isMobile ? 'Feed' : 'Live News Feed'}
-                        </button>
-                    </div>
-                </div>
-            </div>
+                    )}
 
-            <div className="unified-panel-content">
-                {activeTab === 'incidents' ? (
-                    <div className="incidents-content" ref={incidentsContentRef} onScroll={handleIncidentsScroll}>
-                        {currentIncidents.length === 0 ? (
-                            <div className="incidents-placeholder">
-                                <h4>No Nearby Incidents</h4>
-                                <p className="placeholder-text">
-                                    {isMobile ? 'Tap to see nearby incidents' : 'Move your cursor over the map to see nearby incidents.'}
-                                </p>
-                            </div>
-                        ) : (
-                            <div className="incidents-list" ref={incidentsListRef}>
-                                <div className="incidents-header">
-                                    <h4>
-                                        {isPersistent ? 'Incidents ' : 'Incidents in Range '}
-                                        ({currentIncidents.length})
-                                    </h4>
+                    {!isMobile && (
+                        <div className="paused-indicator">
+                            {activeTab === 'incidents'
+                                ? (isPersistent ? 'Click to Unpause' : 'Click to Pause')
+                                : 'News Feed'
+                            }
+                        </div>
+                    )}
+                    <div className="live-clock-container">
+                        <span className="live-clock">{formatMilitaryTime(currentTime)}</span>
+                    </div>
+                    <div className="header-top">
+                        <div className="tab-toggle">
+                            <button
+                                className={`tab-button ${activeTab === 'incidents' ? 'active' : ''}`}
+                                onClick={() => handleTabSwitch('incidents')}
+                            >
+                                Incidents
+                            </button>
+                            <button
+                                className={`tab-button ${activeTab === 'news' ? 'active' : ''}`}
+                                onClick={() => handleTabSwitch('news')}
+                            >
+                                {isMobile ? 'Feed' : 'Live News Feed'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="unified-panel-content">
+                    {activeTab === 'incidents' ? (
+                        <div className="incidents-content" ref={incidentsContentRef} onScroll={handleIncidentsScroll}>
+                            {currentIncidents.length === 0 ? (
+                                <div className="incidents-placeholder">
+                                    <h4>No Nearby Incidents</h4>
+                                    <p className="placeholder-text">
+                                        {isMobile ? 'Tap to see nearby incidents' : 'Move your cursor over the map to see nearby incidents.'}
+                                    </p>
                                 </div>
-                                {displayedIncidents.map((incident, index) => (
-                                    <div key={index} className="incident-item">
-                                        <div className="incident-header">
-                                            {formatDate(incident.date) && (
-                                                <span className="incident-date">{formatDate(incident.date)}</span>
-                                            )}
-                                        </div>
-                                        <a
-                                            href={incident.url}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="incident-title"
-                                        >
-                                            {incident.title || 'No title available'}
-                                        </a>
+                            ) : (
+                                <div className="incidents-list" ref={incidentsListRef}>
+                                    <div className="incidents-header">
+                                        <h4>
+                                            {isPersistent ? 'Incidents ' : 'Incidents in Range '}
+                                            ({currentIncidents.length})
+                                        </h4>
                                     </div>
-                                ))}
-                                {loadingMoreIncidents && (
-                                    <div className="loading-more">Loading more incidents...</div>
-                                )}
-                                {displayedIncidentCount >= currentIncidents.length && currentIncidents.length > 0 && (
-                                    <div className="no-more-incidents">No more incidents to load</div>
-                                )}
-                            </div>
-                        )}
-                    </div>
-                ) : (
-                    <div className="news-content" ref={newsContentRef} onScroll={handleArticlesScroll}>
-                        {loadingNews ? (
-                            <div className="loading">Loading news...</div>
-                        ) : (
-                            <div className="articles-list" ref={articlesListRef}>
-                                {articles.map((article, index) => (
-                                    <div key={index} className="article-item">
-                                        <div className="article-header">
-                                            {formatDate(article.date) && (
-                                                <span className="article-date">{formatDate(article.date)}</span>
-                                            )}
+                                    {displayedIncidents.map((incident, index) => (
+                                        <div key={index} className="incident-item">
+                                            <div className="incident-header">
+                                                {formatDate(incident.date) && (
+                                                    <span className="incident-date">{formatDate(incident.date)}</span>
+                                                )}
+                                            </div>
+                                            <a
+                                                href={incident.url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="incident-title"
+                                            >
+                                                {incident.title || 'No title available'}
+                                            </a>
                                         </div>
-                                        <a
-                                            href={article.url}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="article-title"
-                                        >
-                                            {article.title}
-                                        </a>
-                                    </div>
-                                ))}
-                                {loadingMoreArticles && (
-                                    <div className="loading-more">Loading more articles...</div>
-                                )}
-                                {displayedArticleCount >= allArticles.length && allArticles.length > 0 && (
-                                    <div className="no-more-articles">No more articles to load</div>
-                                )}
-                            </div>
-                        )}
-                    </div>
-                )}
+                                    ))}
+                                    {loadingMoreIncidents && (
+                                        <div className="loading-more">Loading more incidents...</div>
+                                    )}
+                                    {displayedIncidentCount >= currentIncidents.length && currentIncidents.length > 0 && (
+                                        <div className="no-more-incidents">No more incidents to load</div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    ) : (
+                        <div className="news-content" ref={newsContentRef} onScroll={handleArticlesScroll}>
+                            {loadingNews ? (
+                                <div className="loading">Loading news...</div>
+                            ) : (
+                                <div className="articles-list" ref={articlesListRef}>
+                                    {articles.map((article, index) => (
+                                        <div key={index} className="article-item">
+                                            <div className="article-header">
+                                                {formatDate(article.date) && (
+                                                    <span className="article-date">{formatDate(article.date)}</span>
+                                                )}
+                                            </div>
+                                            <a
+                                                href={article.url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="article-title"
+                                            >
+                                                {article.title}
+                                            </a>
+                                        </div>
+                                    ))}
+                                    {loadingMoreArticles && (
+                                        <div className="loading-more">Loading more articles...</div>
+                                    )}
+                                    {displayedArticleCount >= allArticles.length && allArticles.length > 0 && (
+                                        <div className="no-more-articles">No more articles to load</div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
             </div>
-        </div>
+        </>
     );
 }
 
