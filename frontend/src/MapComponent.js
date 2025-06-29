@@ -214,18 +214,6 @@ function MapComponent({ arrestData, inspectionData, onCursorMove, onMapClick, on
             <div className="branding-overlay">
                 icemap.dev
             </div>
-            {/* Desktop controls - only show on non-mobile */}
-            <div className="map-controls desktop-only">
-                <div className={`checkbox-container ${showDetentionPins ? 'checked' : ''}`}>
-                    <div
-                        className={`checkbox ${showDetentionPins ? 'checked' : ''}`}
-                        onClick={onToggleDetentionPins}
-                    >
-                        {showDetentionPins && <div className="checkmark">✓</div>}
-                    </div>
-                    <span className="checkbox-label">Detention Center Pins</span>
-                </div>
-            </div>
             <MapContainer
                 center={center}
                 zoom={4}
