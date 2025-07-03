@@ -477,18 +477,19 @@ def getUnprocessedArticles() -> str:
 
 from urllib.parse import urlencode
 
+# markArticleAsProcessed (client side)
 def markArticleAsProcessed(url: str) -> None:
-    headers = {"x-api-key": ARTICLES_API_KEY}
     resp = requests.post(
-        ARTICLES_PROCESS_MARK_API,          # <- no manual ‘?url=’
-        params={"url": url},                # urlencode() happens inside requests
-        headers=headers,
+        ARTICLES_PROCESS_MARK_API,
+        json={"url": url},                  # <-- body, not params
+        headers={"x-api-key": ARTICLES_API_KEY},
         timeout=10,
     )
-    resp.raise_for_status()                # still catch real HTTP errors
-    body = resp.json()
-    if body.get("statusCode", 200) != 200: # <- new: honour lambda’s status
-        raise RuntimeError(f"mark failed: {body}")
+    resp.raise_for_status()                # HTTP layer
+    payload = resp.json()
+    if payload.get("statusCode", 200) != 200:
+        raise RuntimeError(f"mark failed: {payload}")
+
 
 def addArticle(payload: ArticlePayload) -> None:
     """POST article to the putArticle API Gateway endpoint."""
