@@ -287,6 +287,67 @@ def extractAddressFromText(text: str) -> Optional[str]:
         print(f"Error extracting address: {e}")
         return None
 
+def sanitize_address(address: str, article_text: str = "") -> str:
+    """Clean and clarify address information using DeepSeek before geocoding."""
+    if not DEEPSEEK_API_KEY:
+        return address
+        
+    if not address:
+        return address
+        
+    prompt = """You are a helpful assistant that clarifies and standardizes location names for geocoding.
+
+Given a location name and optional article context, return a clear, specific address that would work well with Google Maps geocoding.
+
+Examples:
+- "Washington" → "Washington DC, USA" (if no state specified)
+- "LA" → "Los Angeles, CA, USA"
+- "NYC" → "New York City, NY, USA"
+- "Texas" → "Texas, USA"
+- "Downtown" → "Downtown, [city from context], USA"
+
+Location: {address}
+Article context: {context}
+
+Return ONLY the clarified address, no other text. If the location is already clear and specific, return it as-is."""
+
+    headers = {
+        "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
+        "Content-Type": "application/json"
+    }
+    
+    data = {
+        "model": "deepseek-chat",
+        "messages": [
+            {
+                "role": "user",
+                "content": prompt.format(
+                    address=address,
+                    context=article_text[:500] if article_text else "No additional context"
+                )
+            }
+        ],
+        "temperature": 0.1,
+        "max_tokens": 100
+    }
+    
+    try:
+        response = requests.post(DEEPSEEK_API_URL, headers=headers, json=data, timeout=30)
+        response.raise_for_status()
+        
+        result = response.json()
+        sanitized_address = result["choices"][0]["message"]["content"].strip()
+        
+        # Remove quotes if present
+        sanitized_address = sanitized_address.strip('"\'')
+        
+        print(f"Address sanitization: '{address}' → '{sanitized_address}'")
+        return sanitized_address
+        
+    except Exception as e:
+        print(f"Error sanitizing address '{address}': {e}")
+        return address
+
 def geoTag(address: str) -> Optional[tuple[float, float]]:
     """Extract (lat, lon) from address string using Google Places API."""
     if not GOOGLE_PLACES_API_KEY:
@@ -535,6 +596,7 @@ def process_csv_articles(
     fetch_text: ToolFunc = getText,
     relevance:  ToolFunc = judgeRelevance,
     extract_addr: ToolFunc = extractAddressFromText,
+    sanitize_addr: ToolFunc = sanitize_address,
     tag_coords: ToolFunc = geoTag,
     classify:   ToolFunc = categorize,
     canonical_pub: ToolFunc = addPublisher,
@@ -599,26 +661,31 @@ def process_csv_articles(
                 continue
             print(f"Extracted address: {address}")
             
-            # Step 4: Get coordinates from address
-            print(f"\nGetting coordinates for: {address}")
-            coords = tag_coords(address)
+            # Step 4: Sanitize address
+            print("\nSanitizing address...")
+            sanitized_address = sanitize_addr(address, text)
+            print(f"Sanitized address: {sanitized_address}")
+            
+            # Step 5: Get coordinates from address
+            print(f"\nGetting coordinates for: {sanitized_address}")
+            coords = tag_coords(sanitized_address)
             if not coords:
                 print("Could not extract coordinates from address")
                 ignored += 1
                 continue
             print(f"Coordinates: {coords[0]:.6f}, {coords[1]:.6f}")
             
-            # Step 5: Categorize
+            # Step 6: Categorize
             print("\nCategorizing article...")
             category = classify(text)
             print(f"Category: {category}")
             
-            # Step 6: Get publisher
+            # Step 7: Get publisher
             print("\nExtracting publisher...")
             publisher = canonical_pub(rec.url)
             print(f"Publisher: {publisher}")
             
-            # Step 7: Build payload
+            # Step 8: Build payload
             payload: ArticlePayload = {
                 "title":      rec.title,
                 "date":       rec.date.isoformat(),
@@ -627,7 +694,11 @@ def process_csv_articles(
                 "coordinates": {"lat": coords[0], "lon": coords[1]},
                 "category":   category,
                 "publisher":  publisher,
+                "address":    sanitized_address,  # Store the sanitized address
             }
+
+            # Enrich with parsed location information
+            payload = enrich_addr(payload)
 
             # Show parsed location details
             if "parsed_location" in payload:
@@ -639,18 +710,9 @@ def process_csv_articles(
                 print(f"   Address: {loc.get('address', 'N/A')}")
                 print(f"   Details: {loc.get('location_details', 'N/A')}")
 
-            # Add top-level address field for DynamoDB compatibility
-            if "parsed_location" in payload and payload["parsed_location"].get("address"):
-                payload["address"] = payload["parsed_location"]["address"]
-            elif "parsed_location" in payload:
-                addr_parts = [
-                    payload["parsed_location"].get("city", ""),
-                    payload["parsed_location"].get("state", ""),
-                    payload["parsed_location"].get("country", "")
-                ]
-                payload["address"] = ", ".join([p for p in addr_parts if p])
-            else:
-                payload["address"] = ""
+            # Ensure the sanitized address persists as the primary address field
+            # This takes precedence over parsed_location.address for consistency
+            payload["address"] = sanitized_address
             
             print(f"Final address: {payload.get('address', 'N/A')}")
             
@@ -707,6 +769,7 @@ def process_api_articles(
     fetch_text: ToolFunc = getText,
     relevance:  ToolFunc = judgeRelevance,
     extract_addr: ToolFunc = extractAddressFromText,
+    sanitize_addr: ToolFunc = sanitize_address,
     tag_coords: ToolFunc = geoTag,
     classify:   ToolFunc = categorize,
     canonical_pub: ToolFunc = addPublisher,
@@ -834,26 +897,31 @@ def process_api_articles(
                 continue
             print(f"Extracted address: {address}")
             
-            # Step 4: Get coordinates from address
-            print(f"\nGetting coordinates for: {address}")
-            coords = tag_coords(address)
+            # Step 4: Sanitize address
+            print("\nSanitizing address...")
+            sanitized_address = sanitize_addr(address, text)
+            print(f"Sanitized address: {sanitized_address}")
+            
+            # Step 5: Get coordinates from address
+            print(f"\nGetting coordinates for: {sanitized_address}")
+            coords = tag_coords(sanitized_address)
             if not coords:
                 print("Could not extract coordinates from address")
                 ignored += 1
                 continue
             print(f"Coordinates: {coords[0]:.6f}, {coords[1]:.6f}")
             
-            # Step 5: Categorize
+            # Step 6: Categorize
             print("\nCategorizing article...")
             category = classify(text)
             print(f"Category: {category}")
             
-            # Step 6: Get publisher
+            # Step 7: Get publisher
             print("\nExtracting publisher...")
             publisher = canonical_pub(rec.url)
             print(f"Publisher: {publisher}")
             
-            # Step 7: Build payload
+            # Step 8: Build payload
             payload: ArticlePayload = {
                 "title":      rec.title,
                 "date":       rec.date.isoformat(),
@@ -862,8 +930,12 @@ def process_api_articles(
                 "coordinates": {"lat": coords[0], "lon": coords[1]},
                 "category":   category,
                 "publisher":  publisher,
+                "address":    sanitized_address,  # Store the sanitized address
             }
             
+            # Enrich with parsed location information
+            payload = enrich_addr(payload)
+
             # Show parsed location details
             if "parsed_location" in payload:
                 loc = payload["parsed_location"]
@@ -874,18 +946,9 @@ def process_api_articles(
                 print(f"   Address: {loc.get('address', 'N/A')}")
                 print(f"   Details: {loc.get('location_details', 'N/A')}")
 
-            # Add top-level address field for DynamoDB compatibility
-            if "parsed_location" in payload and payload["parsed_location"].get("address"):
-                payload["address"] = payload["parsed_location"]["address"]
-            elif "parsed_location" in payload:
-                addr_parts = [
-                    payload["parsed_location"].get("city", ""),
-                    payload["parsed_location"].get("state", ""),
-                    payload["parsed_location"].get("country", "")
-                ]
-                payload["address"] = ", ".join([p for p in addr_parts if p])
-            else:
-                payload["address"] = ""
+            # Ensure the sanitized address persists as the primary address field
+            # This takes precedence over parsed_location.address for consistency
+            payload["address"] = sanitized_address
             
             print(f"Final address: {payload.get('address', 'N/A')}")
             
@@ -957,6 +1020,7 @@ def run_continuous_processing(
     fetch_text: ToolFunc = getText,
     relevance:  ToolFunc = judgeRelevance,
     extract_addr: ToolFunc = extractAddressFromText,
+    sanitize_addr: ToolFunc = sanitize_address,
     tag_coords: ToolFunc = geoTag,
     classify:   ToolFunc = categorize,
     canonical_pub: ToolFunc = addPublisher,
@@ -1016,6 +1080,7 @@ def run_continuous_processing(
                 fetch_text=fetch_text,
                 relevance=relevance,
                 extract_addr=extract_addr,
+                sanitize_addr=sanitize_addr,
                 tag_coords=tag_coords,
                 classify=classify,
                 canonical_pub=canonical_pub,
@@ -1045,6 +1110,11 @@ def run_continuous_processing(
                 print(f"Processed fewer articles than max ({accepted + ignored} < {max_articles_per_batch})")
                 print(f"May be caught up. Waiting {wait_minutes} minutes before next check...")
                 time.sleep(wait_minutes * 60)
+            else:
+                # If we processed the full batch, there might be more articles
+                # Continue immediately to the next batch
+                print(f"Processed full batch ({accepted + ignored} articles)")
+                print("Continuing immediately to check for more articles...")
             
         except KeyboardInterrupt:
             print(f"\n{'='*80}")
@@ -1075,6 +1145,7 @@ def process_stream(
     fetch_text: ToolFunc = getText,
     relevance:  ToolFunc = judgeRelevance,
     extract_addr: ToolFunc = extractAddressFromText,
+    sanitize_addr: ToolFunc = sanitize_address,
     tag_coords: ToolFunc = geoTag,
     classify:   ToolFunc = categorize,
     canonical_pub: ToolFunc = addPublisher,
@@ -1131,8 +1202,12 @@ def process_stream(
             continue
         print(f"Address: {address}")
 
-        # Get coordinates from address
-        coords = tag_coords(address)
+        # Sanitize address before geocoding
+        sanitized_address = sanitize_addr(address, text)
+        print(f"Sanitized address: {sanitized_address}")
+
+        # Get coordinates from sanitized address
+        coords = tag_coords(sanitized_address)
         if not coords:
             print("No coordinates found")
             ignored += 1
@@ -1147,22 +1222,14 @@ def process_stream(
             "coordinates": {"lat": coords[0], "lon": coords[1]},
             "category":   classify(text),
             "publisher":  canonical_pub(rec.url),
+            "address":    sanitized_address,  # Store the sanitized address
         }
 
         payload = enrich_addr(payload)  # attach admin area, country, etc.
 
-        # Add top-level address field for DynamoDB compatibility
-        if "parsed_location" in payload and payload["parsed_location"].get("address"):
-            payload["address"] = payload["parsed_location"]["address"]
-        elif "parsed_location" in payload:
-            addr_parts = [
-                payload["parsed_location"].get("city", ""),
-                payload["parsed_location"].get("state", ""),
-                payload["parsed_location"].get("country", "")
-            ]
-            payload["address"] = ", ".join([p for p in addr_parts if p])
-        else:
-            payload["address"] = ""
+        # Ensure the sanitized address persists as the primary address field
+        # This takes precedence over parsed_location.address for consistency
+        payload["address"] = sanitized_address
 
         if not sufficiency(payload):
             print("Insufficient payload")
