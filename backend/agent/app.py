@@ -479,13 +479,11 @@ from urllib.parse import urlencode
 
 # markArticleAsProcessed (client side)
 def markArticleAsProcessed(url: str) -> None:
-    resp = requests.post(
-        ARTICLES_PROCESS_MARK_API,
-        json={"url": url},                  # <-- body, not params
-        headers={"x-api-key": ARTICLES_API_KEY},
-        timeout=10,
-    )
-    resp.raise_for_status()                # HTTP layer
+    resp = requests.post(API_URL,
+                     json={"url": url},
+                     headers={"x-api-key": ARTICLES_API_KEY},
+                     timeout=10)
+    resp.raise_for_status()
     payload = resp.json()
     if payload.get("statusCode", 200) != 200:
         raise RuntimeError(f"mark failed: {payload}")
