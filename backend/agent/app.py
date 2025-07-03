@@ -479,7 +479,7 @@ from urllib.parse import urlencode
 
 # markArticleAsProcessed (client side)
 def markArticleAsProcessed(url: str) -> None:
-    resp = requests.post(API_URL,
+    resp = requests.post(ARTICLES_PROCESS_MARK_API,
                      json={"url": url},
                      headers={"x-api-key": ARTICLES_API_KEY},
                      timeout=10)
