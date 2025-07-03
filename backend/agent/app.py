@@ -475,28 +475,20 @@ def getUnprocessedArticles() -> str:
     except Exception as e:
         raise RuntimeError(f"Failed to get unprocessed articles: {e}")
 
+from urllib.parse import urlencode
+
 def markArticleAsProcessed(url: str) -> None:
-    """Mark an article as processed in the database."""
-    api_url = ARTICLES_PROCESS_MARK_API
-    api_key = ARTICLES_API_KEY
-    
-    if not api_url:
-        raise RuntimeError("ARTICLES_PROCESS_MARK_API environment variable is required")
-    
-    if not api_key:
-        raise RuntimeError("ARTICLES_API_KEY environment variable is required")
-    
-    # Prepare the payload as specified
-    # Headers with API key
-    headers = {"Content-Type": "application/json"}
-    headers["x-api-key"] = api_key
-    
-    try:
-        response = requests.post(api_url + "?url=" + url, headers=headers, timeout=10)
-        response.raise_for_status()
-        print(f"Marked article as processed: {url}")
-    except Exception as e:
-        print(f"Warning: Failed to mark article as processed ({url}): {e}")
+    headers = {"x-api-key": ARTICLES_API_KEY}
+    resp = requests.post(
+        ARTICLES_PROCESS_MARK_API,          # <- no manual ‘?url=’
+        params={"url": url},                # urlencode() happens inside requests
+        headers=headers,
+        timeout=10,
+    )
+    resp.raise_for_status()                # still catch real HTTP errors
+    body = resp.json()
+    if body.get("statusCode", 200) != 200: # <- new: honour lambda’s status
+        raise RuntimeError(f"mark failed: {body}")
 
 def addArticle(payload: ArticlePayload) -> None:
     """POST article to the putArticle API Gateway endpoint."""
@@ -1013,7 +1005,7 @@ def process_api_articles(
     return accepted, ignored
 
 def run_continuous_processing(
-    max_articles_per_batch: int = 100,
+    max_articles_per_batch: int = 25,
     wait_minutes: int = 5,
     *,
     # Inject the tool chain so tests can monkey-patch
@@ -1294,7 +1286,7 @@ def process_continuous_endpoint():
         import threading
         
         def run_continuous():
-            run_continuous_processing(max_articles_per_batch=100, wait_minutes=5)
+            run_continuous_processing(max_articles_per_batch=25, wait_minutes=5)
         
         thread = threading.Thread(target=run_continuous, daemon=True)
         thread.start()
@@ -1316,7 +1308,7 @@ if __name__ == "__main__":
     # Run continuous processing of articles from API
     print("ICE Agent Starting in Continuous Mode...")
     print("Press Ctrl+C to stop the process")
-    run_continuous_processing(max_articles_per_batch=100, wait_minutes=5)
+    run_continuous_processing(max_articles_per_batch=25, wait_minutes=5)
     
     # ── Server mode ────────────────────────────────────────────────────────
     # uvicorn ice_agent.app:app --reload --host 0.0.0.0 --port 8000
