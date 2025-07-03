@@ -1105,16 +1105,8 @@ def run_continuous_processing(
                 print(f"Overall success rate: {total_accepted/(total_accepted+total_ignored)*100:.1f}%")
             print(f"Completed at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
             
-            # If we processed fewer articles than the max, we might be caught up
-            if accepted + ignored < max_articles_per_batch:
-                print(f"Processed fewer articles than max ({accepted + ignored} < {max_articles_per_batch})")
-                print(f"May be caught up. Waiting {wait_minutes} minutes before next check...")
-                time.sleep(wait_minutes * 60)
-            else:
-                # If we processed the full batch, there might be more articles
-                # Continue immediately to the next batch
-                print(f"Processed full batch ({accepted + ignored} articles)")
-                print("Continuing immediately to check for more articles...")
+            # Continue immediately to check for more articles
+            print("Continuing immediately to check for more articles...")
             
         except KeyboardInterrupt:
             print(f"\n{'='*80}")
