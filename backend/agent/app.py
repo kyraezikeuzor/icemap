@@ -863,6 +863,9 @@ def process_api_articles(
             if not text:
                 print("Failed to fetch article text")
                 ignored += 1
+                # Mark as processed even if text fetch failed
+                print("Marking article as processed...")
+                mark_processed(rec.url)
                 continue
             
             # Show first 200 characters of text
@@ -876,6 +879,9 @@ def process_api_articles(
             if not is_relevant:
                 print("Article not relevant to ICE")
                 ignored += 1
+                # Mark as processed even if not relevant
+                print("Marking article as processed...")
+                mark_processed(rec.url)
                 continue
             print("Article is ICE-relevant")
             
@@ -885,6 +891,9 @@ def process_api_articles(
             if not address:
                 print("Could not extract address information")
                 ignored += 1
+                # Mark as processed even if no address found
+                print("Marking article as processed...")
+                mark_processed(rec.url)
                 continue
             print(f"Extracted address: {address}")
             
@@ -899,6 +908,9 @@ def process_api_articles(
             if not coords:
                 print("Could not extract coordinates from address")
                 ignored += 1
+                # Mark as processed even if no coordinates found
+                print("Marking article as processed...")
+                mark_processed(rec.url)
                 continue
             print(f"Coordinates: {coords[0]:.6f}, {coords[1]:.6f}")
             
@@ -951,6 +963,9 @@ def process_api_articles(
                 print(f"   Required fields: title, date, url, coordinates, category, publisher")
                 print(f"   Available fields: {list(payload.keys())}")
                 ignored += 1
+                # Mark as processed even if payload insufficient
+                print("Marking article as processed...")
+                mark_processed(rec.url)
                 continue
             print("Payload is sufficient")
             
@@ -962,6 +977,7 @@ def process_api_articles(
                 accepted += 1
             except Exception as e:
                 print(f"Failed to persist article: {e}")
+                ignored += 1
             
             # Step 11: Mark as processed (regardless of success/failure)
             print("\nMarking article as processed...")
